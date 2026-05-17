@@ -1,0 +1,90 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { Bell, CheckCheck, Loader2 } from 'lucide-react';
+import { notificationsApi } from '@/lib/api/services';
+import { timeAgo } from '@/lib/utils';
+import type { Notification } from '@/types';
+
+export default function NotificationsPage() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = () => {
+    setLoading(true);
+    notificationsApi
+      .list()
+      .then((res) => setNotifications(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleMarkAllRead = async () => {
+    await notificationsApi.markAllRead();
+    load();
+  };
+
+  const handleMarkRead = async (id: string) => {
+    await notificationsApi.markRead(id);
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+  };
+
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-semibold text-gray-900">Notifications</h1>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up'}
+          </p>
+        </div>
+        {unreadCount > 0 && (
+          <button onClick={handleMarkAllRead} className="btn-secondary text-xs">
+            <CheckCheck className="w-3.5 h-3.5" />
+            Mark all read
+          </button>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-5 h-5 text-gray-300 animate-spin" />
+        </div>
+      ) : notifications.length === 0 ? (
+        <div className="card p-12 text-center">
+          <Bell className="w-8 h-8 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm text-gray-500">No notifications yet</p>
+        </div>
+      ) : (
+        <div className="card divide-y divide-gray-50">
+          {notifications.map((n) => (
+            <div
+              key={n.id}
+              onClick={() => !n.read && handleMarkRead(n.id)}
+              className={`p-4 flex items-start gap-3 cursor-pointer transition-colors ${
+                n.read ? 'opacity-60' : 'hover:bg-gray-50'
+              }`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full flex-shrink-0 mt-2 ${
+                  n.read ? 'bg-gray-200' : 'bg-brand-600'
+                }`}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-gray-900 mb-0.5">{n.title}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{n.message}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{timeAgo(n.createdAt)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
