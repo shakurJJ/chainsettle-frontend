@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, RefreshCw, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -12,37 +12,76 @@ import { ShipmentProgress } from '@/components/shipments/ShipmentProgress';
 import { shipmentStatusBadge, timeAgo } from '@/lib/utils';
 import type { Shipment } from '@/types';
 
+const POLL_INTERVAL_MS = 15_000;
+
 export default function ShipmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { address } = useAuthStore();
   const [shipment, setShipment] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [secondsAgo, setSecondsAgo] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const load = async () => {
+  const fetchShipment = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     try {
       const data = await shipmentsApi.get(id);
       setShipment(data);
+      setLastUpdated(new Date());
+      setSecondsAgo(0);
+      return data;
     } catch (err) {
       console.error(err);
+      return null;
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [id]);
+  const startPolling = (currentShipment: Shipment) => {
+    if (currentShipment.status !== 'Active') return;
+
+    intervalRef.current = setInterval(async () => {
+      const updated = await fetchShipment(true);
+      if (updated && updated.status !== 'Active') {
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+      }
+    }, POLL_INTERVAL_MS);
+  };
+
+  useEffect(() => {
+    fetchShipment(false).then((data) => {
+      if (data) startPolling(data);
+    });
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [id]);
+
+  // Tick "last updated X seconds ago"
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const tick = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - lastUpdated.getTime()) / 1000));
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [lastUpdated]);
 
   const handleSync = async () => {
     setSyncing(true);
     try {
       await shipmentsApi.sync(id);
-      await load();
+      await fetchShipment(true);
     } finally {
       setSyncing(false);
     }
   };
 
-  const onMilestoneUpdate = () => load();
+  const onMilestoneUpdate = () => fetchShipment(true);
 
   if (loading) {
     return (
@@ -95,10 +134,17 @@ export default function ShipmentDetailPage() {
             <h1 className="text-xl font-semibold text-gray-900">{shipment.id}</h1>
             <span className={shipmentStatusBadge(shipment.status)}>{shipment.status}</span>
           </div>
-          <p className="text-xs text-gray-400">
-            Created {timeAgo(shipment.createdAt)} · Your role:{' '}
-            <span className="font-medium text-gray-600 capitalize">{userRole}</span>
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-xs text-gray-400">
+              Created {timeAgo(shipment.createdAt)} · Your role:{' '}
+              <span className="font-medium text-gray-600 capitalize">{userRole}</span>
+            </p>
+            {lastUpdated && (
+              <p className="text-xs text-gray-300">
+                Last updated: {secondsAgo < 5 ? 'just now' : `${secondsAgo}s ago`}
+              </p>
+            )}
+          </div>
         </div>
         <button
           onClick={handleSync}

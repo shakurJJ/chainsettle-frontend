@@ -1,10 +1,46 @@
 'use client';
 
-import { Bell, Wifi } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Bell, Wifi, Copy, ExternalLink, LogOut, Check } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { shortAddress } from '@/lib/utils';
 
 export function TopBar() {
   const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet';
+  const { address, logout } = useAuthStore();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCopy = async () => {
+    if (!address) return;
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDisconnect = () => {
+    logout();
+    router.push('/auth/login');
+  };
+
+  const explorerUrl =
+    network === 'mainnet'
+      ? `https://stellar.expert/explorer/public/account/${address}`
+      : `https://stellar.expert/explorer/testnet/account/${address}`;
 
   return (
     <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0">
@@ -29,9 +65,57 @@ export function TopBar() {
           aria-label="Notifications"
         >
           <Bell className="w-4.5 h-4.5" />
-          {/* Unread dot — connect to notifications count */}
           <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-red-500" />
         </Link>
+
+        {/* Wallet address dropdown */}
+        {address && (
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setOpen((v) => !v)}
+              className="inline-flex items-center gap-1.5 text-xs font-mono font-medium px-3 py-1.5 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-700 transition-colors"
+            >
+              {shortAddress(address)}
+            </button>
+
+            {open && (
+              <div className="absolute right-0 mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg py-1 z-50">
+                <button
+                  onClick={handleCopy}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  {copied ? (
+                    <Check className="w-3.5 h-3.5 text-green-500" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-gray-400" />
+                  )}
+                  {copied ? 'Copied!' : 'Copy address'}
+                </button>
+
+                <a
+                  href={explorerUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setOpen(false)}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-gray-400" />
+                  View on Stellar Expert
+                </a>
+
+                <div className="border-t border-gray-50 my-1" />
+
+                <button
+                  onClick={handleDisconnect}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Disconnect wallet
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );

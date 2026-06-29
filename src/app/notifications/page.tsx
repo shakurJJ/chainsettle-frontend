@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Bell, CheckCheck, Loader2 } from 'lucide-react';
 import { notificationsApi } from '@/lib/api/services';
+import { EmptyState } from '@/components/EmptyState';
 import { timeAgo } from '@/lib/utils';
 import type { Notification } from '@/types';
 
@@ -57,10 +58,11 @@ export default function NotificationsPage() {
           <Loader2 className="w-5 h-5 text-gray-300 animate-spin" />
         </div>
       ) : notifications.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Bell className="w-8 h-8 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">No notifications yet</p>
-        </div>
+        <EmptyState
+          icon={Bell}
+          title="No notifications yet"
+          description="You're all caught up. We'll notify you when something needs your attention."
+        />
       ) : (
         <div className="card divide-y divide-gray-50">
           {notifications.map((n) => (

@@ -6,6 +6,8 @@ import { Plus, Package, Search, Filter } from 'lucide-react';
 import { shipmentsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { ShipmentCard } from '@/components/shipments/ShipmentCard';
+import { ShipmentCardSkeleton } from '@/components/shipments/ShipmentCardSkeleton';
+import { EmptyState } from '@/components/EmptyState';
 import type { Shipment, ShipmentStatus } from '@/types';
 
 export default function ShipmentsPage() {
@@ -75,26 +77,34 @@ export default function ShipmentsPage() {
       {/* Shipments list */}
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="card p-5 animate-pulse">
-              <div className="h-4 bg-gray-100 rounded w-32 mb-3" />
-              <div className="h-3 bg-gray-100 rounded w-64 mb-2" />
-              <div className="h-3 bg-gray-100 rounded w-48" />
-            </div>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ShipmentCardSkeleton key={i} />
           ))}
         </div>
+      ) : shipments.length === 0 ? (
+        <EmptyState
+          icon={Package}
+          title="No shipments yet"
+          description="Create your first shipment to get started."
+          action={
+            <Link href="/dashboard/shipments/create" className="btn-primary inline-flex">
+              <Plus className="w-4 h-4" />
+              New shipment
+            </Link>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center">
-          <Package className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm font-medium text-gray-700">No shipments found</p>
-          <p className="text-xs text-gray-400 mt-1">
-            Create your first shipment to get started.
-          </p>
-          <Link href="/dashboard/shipments/create" className="btn-primary mt-4 inline-flex">
-            <Plus className="w-4 h-4" />
-            New shipment
-          </Link>
-        </div>
+        <EmptyState
+          icon={Search}
+          title="No results found"
+          description="No shipments match your current search or filter."
+          action={
+            <Link href="/dashboard/shipments/create" className="btn-primary inline-flex">
+              <Plus className="w-4 h-4" />
+              New shipment
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {filtered.map((shipment) => (
