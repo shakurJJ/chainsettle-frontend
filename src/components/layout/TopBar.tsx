@@ -1,13 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Bell, Wifi, Copy, ExternalLink, LogOut, Check } from 'lucide-react';
+import { Bell, Wifi, Copy, ExternalLink, LogOut, Check, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { shortAddress } from '@/lib/utils';
 
-export function TopBar() {
+interface TopBarProps {
+  onMenuClick: () => void;
+}
+
+export function TopBar({ onMenuClick }: TopBarProps) {
   const network = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet';
   const { address, logout } = useAuthStore();
   const router = useRouter();
@@ -44,7 +48,15 @@ export function TopBar() {
 
   return (
     <header className="h-14 bg-white border-b border-gray-100 flex items-center justify-between px-6 flex-shrink-0">
-      <div />
+      {/* Hamburger — only visible on mobile */}
+      <button
+        onClick={onMenuClick}
+        className="md:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+        aria-label="Toggle sidebar"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+      <div className="hidden md:block" />
       <div className="flex items-center gap-3">
         {/* Network badge */}
         <span

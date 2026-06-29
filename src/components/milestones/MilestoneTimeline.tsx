@@ -7,7 +7,6 @@ import {
   AlertTriangle,
   Upload,
   ThumbsUp,
-  ThumbsDown,
   XCircle,
   Loader2,
 } from 'lucide-react';
@@ -15,8 +14,8 @@ import {
   submitProof,
   confirmMilestone,
   raiseDispute,
-  resolveDispute,
 } from '@/lib/stellar/contract';
+import { ArbiterPanel } from './ArbiterPanel';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { milestoneStatusBadge, milestoneStatusLabel, stroopsToUsdc, cn } from '@/lib/utils';
 import type { Shipment, Milestone, MilestoneStatus } from '@/types';
@@ -119,16 +118,6 @@ function MilestoneRow({
       }),
     );
 
-  const handleResolve = (approve: boolean) =>
-    wrap(() =>
-      resolveDispute({
-        callerAddress: address!,
-        shipmentId: shipment.id,
-        milestoneIndex: milestone.milestoneIndex,
-        approve,
-      }),
-    );
-
   const canSubmitProof =
     isActive &&
     milestone.status === 'Pending' &&
@@ -144,10 +133,10 @@ function MilestoneRow({
     milestone.status === 'ProofSubmitted' &&
     userRole === 'buyer';
 
-  const canResolve =
+  const isArbiterOnDisputed =
     isActive &&
     milestone.status === 'Disputed' &&
-    userRole === 'arbiter';
+    address === shipment.arbiterAddress;
 
   return (
     <div className="p-5">
@@ -269,20 +258,16 @@ function MilestoneRow({
               </>
             )}
 
-            {/* Resolve dispute (arbiter) */}
-            {canResolve && !loading && (
-              <>
-                <button onClick={() => handleResolve(true)} className="btn-primary text-xs">
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  Approve — release payment
-                </button>
-                <button onClick={() => handleResolve(false)} className="btn-danger text-xs">
-                  <ThumbsDown className="w-3.5 h-3.5" />
-                  Reject — reset milestone
-                </button>
-              </>
-            )}
           </div>
+
+          {/* Arbiter dispute panel */}
+          {isArbiterOnDisputed && (
+            <ArbiterPanel
+              milestone={milestone}
+              shipment={shipment}
+              onUpdate={onUpdate}
+            />
+          )}
         </div>
       </div>
     </div>
