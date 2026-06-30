@@ -1,4 +1,4 @@
-# ChainSettle — Frontend Repo
+﻿# ChainSettle — Frontend Repo
 
 > **Next.js 14 frontend for milestone-based supply chain escrow on Stellar**
 
@@ -8,19 +8,68 @@ This is **Repo 3 of 3** in the ChainSettle project:
 |------|-------------|
 | `chainsetttle-contract` | Soroban smart contract (Rust) |
 | `chainsetttle-backend` | NestJS REST API + event poller |
-| `chainsetttle-frontend` ← you are here | Next.js 14 + Freighter wallet UI |
+| `chainsettle-frontend` ← you are here | Next.js 14 + Freighter wallet UI |
 
 ---
 
 ## What This Frontend Does
 
-- **Sign-In With Stellar** — no passwords, no email required. Users connect their Freighter wallet, sign a nonce challenge, and receive a JWT
-- **Create shipments** — fill out a form, lock USDC in the Soroban escrow contract via Freighter with one click
-- **Track milestones** — timeline view showing each delivery stage with real-time status
-- **Take actions on-chain** — submit proof hashes (supplier/logistics), confirm milestones (buyer), raise and resolve disputes — all signed directly in Freighter
-- **Notifications** — in-app feed of on-chain events relevant to the user
+ChainSettle frontend is the user-facing interface for creating, tracking, and resolving milestone-based shipments through a Stellar escrow contract. It is designed to be simple and secure for all roles in the supply chain.
 
-Every write action is signed in the user's Freighter wallet. The frontend never holds private keys.
+Key user experiences:
+
+- **Sign-In With Stellar** — authenticate with Freighter, no passwords required.
+- **Create shipments** — configure buyer/supplier/logistics/arbiter, define milestone splits, then sign once to lock USDC into Soroban escrow.
+- **Track active shipments** — view shipment status, progress, and related chain events.
+- **Verify on-chain data** — Stellar addresses and transaction hashes are linked directly to Stellar Expert.
+- **Role-driven milestone actions** — suppliers submit proof, buyers confirm delivery, logistics update transit status, and arbiters resolve disputes.
+- **Search and filter** — browse shipments by status and by shipment ID or counterparty address.
+
+Every transaction is signed through the user's Freighter wallet. The frontend never stores private keys.
+
+---
+
+## Latest Features
+
+This repo now includes a complete set of UI improvements for the shipment list and shipment creation workflow.
+
+### On-chain verification links
+
+- Added `src/components/StellarLink.tsx`.
+- Renders Stellar addresses and transaction hashes as anchor links.
+- Uses `NEXT_PUBLIC_STELLAR_NETWORK` to generate the correct Stellar Expert base URL:
+  - `testnet` → `https://stellar.expert/explorer/testnet/`
+  - `mainnet` → `https://stellar.expert/explorer/public/`
+- Address links point to `/account/{address}`.
+- Transaction hash links point to `/tx/{hash}`.
+- Links open in a new tab using `target="_blank"` and `rel="noopener noreferrer"`.
+
+### Shipment metadata UX
+
+- Updated `src/components/shipments/ShipmentMeta.tsx` to replace raw address/hash text with `StellarLink`.
+- Preserves copy-to-clipboard behavior while making chain references instantly clickable.
+
+### Shipment list filtering
+
+- Updated `src/app/dashboard/shipments/page.tsx`.
+- Added top tabs for: `All`, `Active`, `Completed`, and `Cancelled`.
+- Displays counts for each status in tab labels.
+- Highlights the active status tab visually.
+- Persists filter state in the URL with `?status=`.
+- Maintains compatibility with the search box.
+- Fetches status counts from the backend using the existing shipments list API.
+
+### Milestone validation for creation
+
+- Updated `src/app/dashboard/shipments/create/page.tsx`.
+- Added a live percentage indicator beneath the milestone section.
+- Shows a green success state when milestone percentages sum to `100%`.
+- Shows a red warning state when the sum is invalid.
+- Disables the submit button unless the milestone split totals exactly `100%`.
+- Enforces numeric input between `1` and `100` for each milestone percentage.
+- Supports dynamic milestone row add/remove with real-time total recalculation.
+
+These updates improve reliability and reduce contract submission failures by catching invalid milestone splits in the UI.
 
 ---
 
@@ -42,7 +91,7 @@ Every write action is signed in the user's Freighter wallet. The frontend never 
 ## Project Structure
 
 ```
-chainsetttle-frontend/
+chainsettle-frontend/
 ├── .env.example                        ← copy to .env.local
 ├── .gitignore
 ├── next.config.js
@@ -52,57 +101,60 @@ chainsetttle-frontend/
 ├── README.md
 │
 └── src/
-    ├── middleware.ts                   ← Auth-protect all dashboard routes
+    ├── middleware.ts                   ← Auth-protect dashboard routes
     │
     ├── app/
-    │   ├── layout.tsx                  ← Root layout (font, metadata, Providers)
-    │   ├── page.tsx                    ← Redirects to /dashboard/shipments
+    │   ├── layout.tsx                  ← Root layout with metadata and providers
+    │   ├── page.tsx                    ← Redirect to /dashboard/shipments
     │   ├── providers.tsx               ← Zustand rehydration wrapper
     │   │
     │   ├── auth/
     │   │   └── login/
-    │   │       └── page.tsx            ← Freighter connect + Sign-In With Stellar
+    │   │       └── page.tsx            ← Freighter connect + Stellar login page
     │   │
     │   ├── dashboard/
-    │   │   ├── layout.tsx              ← Sidebar + TopBar wrapper
+    │   │   ├── layout.tsx              ← Sidebar + top bar wrapper
     │   │   └── shipments/
-    │   │       ├── page.tsx            ← Shipment list with search + filter
+    │   │       ├── page.tsx            ← Shipments list with tabs + search
     │   │       ├── create/
-    │   │       │   └── page.tsx        ← Create shipment form (Freighter tx)
+    │   │       │   └── page.tsx        ← Create shipment form + milestone validation
     │   │       └── [id]/
-    │   │           └── page.tsx        ← Shipment detail + milestone actions
+    │   │           └── page.tsx        ← Shipment detail and milestone timeline
     │   │
     │   └── notifications/
     │       └── page.tsx                ← Notification feed
     │
     ├── components/
+    │   ├── StellarLink.tsx             ← Stellar Expert address/tx links
     │   ├── layout/
     │   │   ├── Sidebar.tsx             ← Navigation sidebar
-    │   │   └── TopBar.tsx              ← Top header bar
+    │   │   └── TopBar.tsx              ← Header with wallet actions
     │   ├── shipments/
-    │   │   ├── ShipmentCard.tsx        ← List item card
-    │   │   ├── ShipmentProgress.tsx    ← USDC stats + progress bar
-    │   │   └── ShipmentMeta.tsx        ← Addresses + on-chain metadata
+    │   │   ├── ShipmentCard.tsx        ← List card UI for shipments
+    │   │   ├── ShipmentProgress.tsx    ← Progress bar and totals
+    │   │   ├── ShipmentMeta.tsx        ← Shipment metadata details
+    │   │   └── ShipmentCardSkeleton.tsx← Loading skeletons
     │   └── milestones/
-    │       └── MilestoneTimeline.tsx   ← Timeline with all role-based actions
+    │       ├── MilestoneTimeline.tsx   ← Milestone action timeline
+    │       └── ArbiterPanel.tsx       ← Dispute resolution UI
     │
     ├── lib/
     │   ├── stellar/
-    │   │   ├── freighter.ts            ← Freighter API wrappers (connect, sign, watch)
-    │   │   └── contract.ts             ← Soroban contract call builders + submitters
+    │   │   ├── freighter.ts            ← Freighter wallet wrappers
+    │   │   └── contract.ts             ← Soroban transaction builders
     │   ├── api/
-    │   │   ├── client.ts               ← Axios instance with JWT interceptor
-    │   │   └── services.ts             ← Typed API functions for all backend endpoints
+    │   │   ├── client.ts               ← Axios client with auth interceptor
+    │   │   └── services.ts             ← Backend API wrappers
     │   ├── hooks/
-    │   │   └── use-auth-store.ts       ← Zustand store (address, token, user)
+    │   │   └── use-auth-store.ts       ← Zustand auth store
     │   └── utils/
-    │       └── index.ts                ← Formatting (USDC, addresses, dates, badges)
+    │       └── index.ts                ← Formatting and helpers
     │
     ├── types/
-    │   └── index.ts                    ← All shared TypeScript types
+    │   └── index.ts                    ← Shared TypeScript types
     │
     └── styles/
-        └── globals.css                 ← Tailwind + custom component classes
+        └── globals.css                 ← Tailwind setup and custom styles
 ```
 
 ---
@@ -111,104 +163,72 @@ chainsetttle-frontend/
 
 ### Authentication (Sign-In With Stellar)
 
-```
-User clicks "Connect Freighter"
-  → connectFreighter() → requestAccess() from Freighter
-  → authApi.getNonce(address) → GET /auth/nonce
-  → signNonce(nonce) → Freighter signs a minimal Stellar transaction
-  → authApi.login(payload) → POST /auth/login
-  → JWT stored in localStorage + cookie (for Next.js middleware)
-  → Redirect to /dashboard/shipments
-```
+1. User clicks connect.
+2. Freighter returns the public Stellar address.
+3. Frontend requests a nonce from `/auth/nonce`.
+4. User signs the nonce in Freighter.
+5. Frontend sends the signed payload to `/auth/login`.
+6. Backend returns a JWT and user profile.
+7. Frontend stores auth state and redirects to the dashboard.
 
-### Creating a Shipment
+### Shipment creation
 
-```
-User fills form → clicks "Sign & lock funds in escrow"
-  → createShipment() in lib/stellar/contract.ts
-  → TransactionBuilder + Contract.call('create_shipment', ...args)
-  → rpc.simulateTransaction() → get resource footprint
-  → assembleTransaction() → final tx
-  → signTx() → Freighter prompts user to sign
-  → rpc.sendTransaction() → broadcast to Stellar
-  → waitForConfirmation() → poll until confirmed
-  → shipmentsApi.create() → POST /shipments (register in backend DB)
-  → Redirect to /dashboard/shipments/:id
-```
+1. User enters buyer/supplier/logistics/arbiter addresses.
+2. User defines milestones and payment percentages.
+3. The UI validates that the milestone total equals `100%`.
+4. The user signs a Soroban transaction through Freighter.
+5. The transaction is published to Stellar.
+6. After confirmation, the shipment is stored in the backend.
 
-### Confirming a Milestone
+### Shipment filtering and verification
 
-```
-Buyer clicks "Confirm & release" on a ProofSubmitted milestone
-  → confirmMilestone() → Freighter signs contract call
-  → Contract releases % of USDC to supplier automatically
-  → EventsService (backend) detects milestone_confirmed event
-  → Notification sent to supplier
-  → UI reloads shipment state
-```
+- Shipment list supports text search and status tabs.
+- Status selection persists in the browser URL.
+- Shipment metadata includes Stellar Expert links for both accounts and tx hashes.
+- Users can verify chain state without manual lookup.
 
 ---
 
 ## Prerequisites
 
 - **Node.js** v20+
-- **Freighter** browser extension — [freighter.app](https://freighter.app)
-- Running `chainsetttle-backend` on `localhost:3000`
-- Deployed `chainsetttle-contract` (contract ID in `.env.local`)
+- **Freighter** browser extension installed
+- Running backend service (`chainsetttle-backend`)
+- Deployed contract with IDs configured in `.env.local`
 
 ---
 
 ## Setup
 
 ```bash
-# Install dependencies
 npm install
-
-# Set environment variables
 cp .env.example .env.local
-# Edit .env.local with your backend URL and contract ID
-
-# Start dev server
+# Edit .env.local
 npm run dev
 ```
 
-App runs at `http://localhost:3001` (or `3000` if backend is on a different port).
+---
 
-### Environment variables
+## Environment variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_API_URL` | Yes | Backend API URL e.g. `http://localhost:3000/api/v1` |
+| `NEXT_PUBLIC_API_URL` | Yes | Backend API URL |
 | `NEXT_PUBLIC_STELLAR_NETWORK` | Yes | `testnet` or `mainnet` |
-| `NEXT_PUBLIC_CONTRACT_ID` | Yes | Deployed ChainSettle contract ID |
-| `NEXT_PUBLIC_USDC_ADDRESS` | Yes | USDC SAC address for your network |
+| `NEXT_PUBLIC_CONTRACT_ID` | Yes | Deployed contract ID |
+| `NEXT_PUBLIC_USDC_ADDRESS` | Yes | USDC asset address for network |
 | `NEXT_PUBLIC_STELLAR_RPC_URL` | Yes | Soroban RPC endpoint |
-| `NEXT_PUBLIC_HORIZON_URL` | No | Horizon URL (for account lookups) |
-
----
-
-## Role-Based UI
-
-The frontend detects the current user's role by comparing their Stellar address to the shipment's stored addresses:
-
-| Role | Detected by | Available actions |
-|---|---|---|
-| **Buyer** | `address === shipment.buyerAddress` | Confirm milestones, raise disputes, cancel shipment |
-| **Supplier** | `address === shipment.supplierAddress` | Submit proof for dispatch + delivery milestones |
-| **Logistics** | `address === shipment.logisticsAddress` | Submit proof for in-transit milestones |
-| **Arbiter** | `address === shipment.arbiterAddress` | Approve or reject disputed milestones |
-| **Observer** | Any other address | Read-only view |
+| `NEXT_PUBLIC_HORIZON_URL` | No | Optional Horizon URL |
 
 ---
 
 ## Production Checklist
 
 - [ ] Set `NEXT_PUBLIC_STELLAR_NETWORK=mainnet`
-- [ ] Update `NEXT_PUBLIC_USDC_ADDRESS` to mainnet USDC SAC
-- [ ] Set `NEXT_PUBLIC_CONTRACT_ID` to mainnet deployed contract
-- [ ] Use HTTPS for the backend URL
-- [ ] Deploy to Vercel / Netlify / Docker
-- [ ] Set `CORS_ORIGIN` in the backend to match the frontend domain
+- [ ] Use mainnet USDC address
+- [ ] Configure mainnet contract ID
+- [ ] Enable HTTPS backend URL
+- [ ] Deploy frontend and backend with matching CORS settings
 
 ---
 

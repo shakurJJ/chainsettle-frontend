@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Package, Search } from 'lucide-react';
 import { shipmentsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -15,12 +16,30 @@ const PAGE_LIMIT = 10;
 
 export default function ShipmentsPage() {
   const { address } = useAuthStore();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ShipmentStatus | ''>('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [statusCounts, setStatusCounts] = useState({
+    All: 0,
+    Active: 0,
+    Completed: 0,
+    Cancelled: 0,
+  });
+
+  const statusTabs: Array<{ label: string; value: ShipmentStatus | '' }> = [
+    { label: 'All', value: '' },
+    { label: 'Active', value: 'Active' },
+    { label: 'Completed', value: 'Completed' },
+    { label: 'Cancelled', value: 'Cancelled' },
+  ];
+
+  const validStatusValues = ['Active', 'Completed', 'Cancelled'];
 
   useEffect(() => {
     if (!address) return;
@@ -41,6 +60,42 @@ export default function ShipmentsPage() {
       .finally(() => setLoading(false));
   }, [address, statusFilter, page]);
 
+  useEffect(() => {
+    if (!address) return;
+
+    const loadCounts = async () => {
+      try {
+        const [allRes, activeRes, completedRes, cancelledRes] = await Promise.all([
+          shipmentsApi.list({ buyerAddress: address, page: 1, limit: 1 }),
+          shipmentsApi.list({ buyerAddress: address, status: 'Active', page: 1, limit: 1 }),
+          shipmentsApi.list({ buyerAddress: address, status: 'Completed', page: 1, limit: 1 }),
+          shipmentsApi.list({ buyerAddress: address, status: 'Cancelled', page: 1, limit: 1 }),
+        ]);
+
+        setStatusCounts({
+          All: allRes.meta.total,
+          Active: activeRes.meta.total,
+          Completed: completedRes.meta.total,
+          Cancelled: cancelledRes.meta.total,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadCounts();
+  }, [address]);
+
+  useEffect(() => {
+    const paramStatus = searchParams?.get('status') ?? '';
+    if (paramStatus && !validStatusValues.includes(paramStatus)) {
+      setStatusFilter('');
+      return;
+    }
+
+    setStatusFilter(paramStatus as ShipmentStatus | '');
+  }, [searchParams]);
+
   // Reset to page 1 when search or filter changes
   useEffect(() => {
     setPage(1);
@@ -58,7 +113,7 @@ export default function ShipmentsPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Shipments</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {shipments.length} shipment{shipments.length !== 1 ? 's' : ''} found
+            {(statusFilter ? statusCounts[statusFilter] : statusCounts.All) || shipments.length} shipment{((statusFilter ? statusCounts[statusFilter] : statusCounts.All) || shipments.length) !== 1 ? 's' : ''} found
           </p>
         </div>
         <Link href="/dashboard/shipments/create" className="btn-primary">
@@ -68,8 +123,38 @@ export default function ShipmentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="relative flex-1 max-w-xs">
+      <div className="mb-5 space-y-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          {statusTabs.map((tab) => {
+            const isActive = tab.value === statusFilter;
+            const count = statusCounts[tab.label as keyof typeof statusCounts] ?? 0;
+
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={() => {
+                  const params = new URLSearchParams(searchParams as any);
+                  if (tab.value) {
+                    params.set('status', tab.value);
+                  } else {
+                    params.delete('status');
+                  }
+                  router.replace(`/dashboard/shipments${params.toString() ? `?${params.toString()}` : ''}`);
+                }}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {tab.label} ({count})
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="relative max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
@@ -79,16 +164,6 @@ export default function ShipmentsPage() {
             className="input pl-9"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as ShipmentStatus | '')}
-          className="input w-auto"
-        >
-          <option value="">All statuses</option>
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
-        </select>
       </div>
 
       {/* Shipments list */}
