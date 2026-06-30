@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Package, Search, Filter } from 'lucide-react';
+import { Plus, Package, Search } from 'lucide-react';
 import { shipmentsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { ShipmentCard } from '@/components/shipments/ShipmentCard';
 import { ShipmentCardSkeleton } from '@/components/shipments/ShipmentCardSkeleton';
 import { EmptyState } from '@/components/EmptyState';
+import { Pagination } from '@/components/Pagination';
 import type { Shipment, ShipmentStatus } from '@/types';
+
+const PAGE_LIMIT = 10;
 
 export default function ShipmentsPage() {
   const { address } = useAuthStore();
@@ -16,18 +19,32 @@ export default function ShipmentsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ShipmentStatus | ''>('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     if (!address) return;
     setLoading(true);
 
-    // Fetch shipments where user is buyer OR supplier
     shipmentsApi
-      .list({ buyerAddress: address, status: statusFilter || undefined })
-      .then((res) => setShipments(res.data))
+      .list({
+        buyerAddress: address,
+        status: statusFilter || undefined,
+        page,
+        limit: PAGE_LIMIT,
+      })
+      .then((res) => {
+        setShipments(res.data);
+        setTotalPages(res.meta.totalPages);
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [address, statusFilter]);
+  }, [address, statusFilter, page]);
+
+  // Reset to page 1 when search or filter changes
+  useEffect(() => {
+    setPage(1);
+  }, [search, statusFilter]);
 
   const filtered = shipments.filter((s) =>
     s.id.toLowerCase().includes(search.toLowerCase()) ||
@@ -106,11 +123,19 @@ export default function ShipmentsPage() {
           }
         />
       ) : (
-        <div className="space-y-3">
-          {filtered.map((shipment) => (
-            <ShipmentCard key={shipment.id} shipment={shipment} />
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {filtered.map((shipment) => (
+              <ShipmentCard key={shipment.id} shipment={shipment} />
+            ))}
+          </div>
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPrev={() => setPage((p) => p - 1)}
+            onNext={() => setPage((p) => p + 1)}
+          />
+        </>
       )}
     </div>
   );

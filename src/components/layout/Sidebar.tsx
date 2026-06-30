@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -8,8 +9,10 @@ import {
   LogOut,
   ShieldCheck,
   Activity,
+  X,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { notificationsApi } from '@/lib/api/services';
 import { shortAddress } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 
@@ -19,30 +22,64 @@ const NAV_ITEMS = [
   { href: '/dashboard/events',    label: 'Chain Events', icon: Activity },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  open: boolean;
+  onClose: () => void;
+}
+
+export function Sidebar({ open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { address, logout } = useAuthStore();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread count on mount and when returning from notifications page
+  useEffect(() => {
+    notificationsApi
+      .list({ unreadOnly: true, limit: 1 })
+      .then((res) => setUnreadCount(res.meta.total))
+      .catch(() => {});
+  }, [pathname]);
+
+  const badgeLabel = unreadCount > 99 ? '99+' : String(unreadCount);
 
   return (
-    <aside className="w-60 bg-white border-r border-gray-100 flex flex-col">
-      {/* Logo */}
-      <div className="px-5 py-5 border-b border-gray-100">
+    <aside
+      className={cn(
+        // Base styles
+        'w-60 bg-white border-r border-gray-100 flex flex-col flex-shrink-0',
+        // Mobile: fixed drawer that slides in/out
+        'fixed inset-y-0 left-0 z-30 transition-transform duration-300 ease-in-out',
+        'md:relative md:translate-x-0 md:z-auto md:transition-none',
+        open ? 'translate-x-0' : '-translate-x-full',
+      )}
+    >
+      {/* Logo + close button (close only visible on mobile) */}
+      <div className="px-5 py-5 border-b border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
             <ShieldCheck className="w-4 h-4 text-white" />
           </div>
           <span className="font-semibold text-gray-900 text-sm">ChainSettle</span>
         </div>
+        <button
+          onClick={onClose}
+          className="md:hidden p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+          aria-label="Close sidebar"
+        >
+          <X className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href);
+          const isNotifications = label === 'Notifications';
           return (
             <Link
               key={href}
               href={href}
+              onClick={onClose}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                 active
@@ -52,6 +89,11 @@ export function Sidebar() {
             >
               <Icon className={cn('w-4 h-4', active ? 'text-brand-600' : 'text-gray-400')} />
               {label}
+              {isNotifications && unreadCount > 0 && (
+                <span className="ml-auto inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold leading-none">
+                  {badgeLabel}
+                </span>
+              )}
             </Link>
           );
         })}
