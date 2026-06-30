@@ -183,7 +183,14 @@ export default function CreateShipmentPage() {
         {/* Milestones */}
         <div className="card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-900">Milestones</h2>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Milestones</h2>
+              <p className={`text-xs mt-1 ${percentValid ? 'text-green-700' : 'text-red-600'}`}>
+                {percentValid
+                  ? 'Milestone percentages add up to 100%.'
+                  : 'Milestone percentages must sum to 100%.'}
+              </p>
+            </div>
             <span
               className={`text-xs font-medium px-2 py-1 rounded-lg ${
                 percentValid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
@@ -211,6 +218,7 @@ export default function CreateShipmentPage() {
                     type="number"
                     min="1"
                     max="100"
+                    step="1"
                     value={m.paymentPercent}
                     onChange={(e) => updateMilestone(i, 'paymentPercent', Number(e.target.value))}
                     required
