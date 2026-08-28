@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -96,23 +96,25 @@ export default function CreateShipmentPage() {
   }, [error]);
 
   const addMilestone = () => {
-    setMilestones([...milestones, { name: '', paymentPercent: 0 }]);
+    setMilestones([...milestones, { name: "", paymentPercent: 0 }]);
   };
 
   const removeMilestone = (i: number) => {
     setMilestones(milestones.filter((_, idx) => idx !== i));
   };
 
-  const updateMilestone = (i: number, field: keyof CreateMilestoneInput, value: any) => {
-    setMilestones(milestones.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)));
+  const updateMilestone = (
+    i: number,
+    field: keyof CreateMilestoneInput,
+    value: any,
+  ) => {
+    setMilestones(
+      milestones.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)),
+    );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!address) return;
-    setError(null);
+  const submitShipment = async () => {
     setLoading(true);
-
     try {
       setTxStep('Building transaction…');
       const txHash = await createShipment({
@@ -142,11 +144,24 @@ export default function CreateShipmentPage() {
       localStorage.removeItem(`chainsetttle_shipment_draft_${address}`);
       router.push(`/dashboard/shipments/${shipmentId}`);
     } catch (err: any) {
-      setError(err?.message ?? 'Transaction failed. Please try again.');
+      setError(err?.message ?? "Transaction failed. Please try again.");
     } finally {
       setLoading(false);
-      setTxStep('');
+      setTxStep("");
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address) return;
+    setError(null);
+
+    if (Number(totalUsdc) >= HIGH_VALUE_THRESHOLD_USDC) {
+      setConfirmationOpen(true);
+      return;
+    }
+
+    await submitShipment();
   };
 
   return (
@@ -161,7 +176,8 @@ export default function CreateShipmentPage() {
 
       <h1 className="text-xl font-semibold text-gray-900 mb-1">New shipment</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Lock USDC in a Soroban escrow contract. Payment releases automatically as milestones are confirmed.
+        Lock USDC in a Soroban escrow contract. Payment releases automatically
+        as milestones are confirmed.
       </p>
       <p className="text-xs text-gray-400 mb-5">Your unfinished form is saved locally in this browser.</p>
 
@@ -175,7 +191,9 @@ export default function CreateShipmentPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Shipment ID */}
         <div className="card p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Shipment details</h2>
+          <h2 className="text-sm font-semibold text-gray-900 mb-4">
+            Shipment details
+          </h2>
           <div className="space-y-4">
             <div>
               <label htmlFor={generateInputId('shipmentId')} className="label">Shipment ID</label>
@@ -255,13 +273,15 @@ export default function CreateShipmentPage() {
               <h2 className="text-sm font-semibold text-gray-900">Milestones</h2>
               <p className={`text-xs mt-1 ${percentValid ? 'text-green-700' : 'text-red-600'}`} aria-live="polite">
                 {percentValid
-                  ? 'Milestone percentages add up to 100%.'
-                  : 'Milestone percentages must sum to 100%.'}
+                  ? "Milestone percentages add up to 100%."
+                  : "Milestone percentages must sum to 100%."}
               </p>
             </div>
             <span
               className={`text-xs font-medium px-2 py-1 rounded-lg ${
-                percentValid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                percentValid
+                  ? "bg-green-50 text-green-700"
+                  : "bg-red-50 text-red-700"
               }`}
               aria-live="off"
             >
@@ -279,7 +299,7 @@ export default function CreateShipmentPage() {
                   id={`${generateInputId('milestone-name')}-${i}`}
                   placeholder="Milestone name"
                   value={m.name}
-                  onChange={(e) => updateMilestone(i, 'name', e.target.value)}
+                  onChange={(e) => updateMilestone(i, "name", e.target.value)}
                   required
                   className="input flex-1"
                   aria-label={`Milestone ${i + 1} name`}
@@ -292,7 +312,13 @@ export default function CreateShipmentPage() {
                     max="100"
                     step="1"
                     value={m.paymentPercent}
-                    onChange={(e) => updateMilestone(i, 'paymentPercent', Number(e.target.value))}
+                    onChange={(e) =>
+                      updateMilestone(
+                        i,
+                        "paymentPercent",
+                        Number(e.target.value),
+                      )
+                    }
                     required
                     className="input pr-7"
                     aria-label={`Milestone ${i + 1} payment percentage`}
@@ -313,7 +339,11 @@ export default function CreateShipmentPage() {
             ))}
           </div>
 
-          <button type="button" onClick={addMilestone} className="btn-ghost text-xs">
+          <button
+            type="button"
+            onClick={addMilestone}
+            className="btn-ghost text-xs"
+          >
             <Plus className="w-3.5 h-3.5" />
             Add milestone
           </button>
@@ -333,7 +363,7 @@ export default function CreateShipmentPage() {
                 <span id={txStepId}>{txStep || 'Processing…'}</span>
               </>
             ) : (
-              'Sign & lock funds in escrow'
+              "Sign & lock funds in escrow"
             )}
           </button>
           <Link href="/dashboard/shipments" className="btn-secondary">
@@ -342,9 +372,69 @@ export default function CreateShipmentPage() {
         </div>
 
         <p className="text-xs text-gray-400 text-center">
-          This will open Freighter to sign the transaction. USDC will be locked in the contract until milestones are confirmed.
+          This will open Freighter to sign the transaction. USDC will be locked
+          in the contract until milestones are confirmed.
         </p>
       </form>
+
+      {confirmationOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4"
+          role="presentation"
+        >
+          <div
+            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="high-value-title"
+          >
+            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <h2
+              id="high-value-title"
+              className="mb-2 text-lg font-semibold text-gray-900"
+            >
+              Confirm high-value escrow
+            </h2>
+            <p className="mb-4 text-sm leading-6 text-gray-500">
+              You are about to lock{" "}
+              <strong className="text-gray-900">{totalUsdc} USDC</strong> in
+              escrow on{" "}
+              <strong className="text-gray-900">
+                {process.env.NEXT_PUBLIC_STELLAR_NETWORK === "mainnet"
+                  ? "Mainnet"
+                  : "Testnet"}
+              </strong>
+              . Review the recipient details and amount carefully before signing
+              in Freighter.
+            </p>
+            <div className="mb-5 rounded-xl bg-gray-50 p-3 text-xs text-gray-500">
+              This transaction meets or exceeds the high-value threshold of{" "}
+              {HIGH_VALUE_THRESHOLD_USDC.toLocaleString()} USDC.
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setConfirmationOpen(false)}
+                className="btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setConfirmationOpen(false);
+                  void submitShipment();
+                }}
+                className="btn-primary text-sm"
+              >
+                Continue to Freighter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

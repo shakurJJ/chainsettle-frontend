@@ -16,6 +16,16 @@ import type { Shipment, ShipmentStatus } from '@/types';
 import { useTranslations } from 'next-intl';
 
 const PAGE_LIMIT = 10;
+type SortKey = "createdAt" | "status" | "amount";
+type SortDirection = "asc" | "desc";
+
+const sortLabels: Record<SortKey, string> = {
+  createdAt: "Created",
+  status: "Status",
+  amount: "Amount",
+};
+const validSortKeys: SortKey[] = ["createdAt", "status", "amount"];
+const validSortDirections: SortDirection[] = ["asc", "desc"];
 
 function ShipmentsPageContent() {
   const { address } = useAuthStore();
@@ -122,9 +132,9 @@ function ShipmentsPageContent() {
   }, [address]);
 
   useEffect(() => {
-    const paramStatus = searchParams?.get('status') ?? '';
+    const paramStatus = searchParams?.get("status") ?? "";
     if (paramStatus && !validStatusValues.includes(paramStatus)) {
-      setStatusFilter('');
+      setStatusFilter("");
       return;
     }
 
@@ -209,6 +219,151 @@ function ShipmentsPageContent() {
     URL.revokeObjectURL(url);
   };
 
+  const sortedShipments = useMemo(
+    () =>
+      [...filtered].sort((left, right) => {
+        let comparison = 0;
+        if (sortKey === "createdAt") {
+          comparison =
+            new Date(left.createdAt).getTime() -
+            new Date(right.createdAt).getTime();
+        } else if (sortKey === "amount") {
+          const leftAmount = BigInt(left.totalAmount);
+          const rightAmount = BigInt(right.totalAmount);
+          comparison =
+            leftAmount < rightAmount ? -1 : leftAmount > rightAmount ? 1 : 0;
+        } else {
+          comparison = left.status.localeCompare(right.status);
+        }
+        return sortDirection === "asc" ? comparison : -comparison;
+      }),
+    [filtered, sortKey, sortDirection],
+  );
+
+  const selectedShipments = sortedShipments.filter((shipment) =>
+    selectedIds.includes(shipment.id),
+  );
+  const cancellableShipments = selectedShipments.filter(
+    (shipment) =>
+      shipment.buyerAddress === address &&
+      shipment.status === "Active" &&
+      !shipment.milestones.some(
+        (milestone) =>
+          milestone.status === "Confirmed" || milestone.status === "Resolved",
+      ),
+  );
+  const allVisibleSelected =
+    sortedShipments.length > 0 &&
+    sortedShipments.every((shipment) => selectedIds.includes(shipment.id));
+
+  useEffect(() => {
+    setSelectedIds((current) =>
+      current.filter((id) => shipments.some((shipment) => shipment.id === id)),
+    );
+  }, [shipments]);
+
+  const toggleSelection = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id)
+        ? current.filter((selectedId) => selectedId !== id)
+        : [...current, id],
+    );
+  };
+
+  const toggleAllVisible = () => {
+    setSelectedIds((current) =>
+      allVisibleSelected
+        ? current.filter(
+            (id) => !sortedShipments.some((shipment) => shipment.id === id),
+          )
+        : Array.from(
+            new Set([
+              ...current,
+              ...sortedShipments.map((shipment) => shipment.id),
+            ]),
+          ),
+    );
+  };
+
+  const exportSelected = () => {
+    const header = [
+      "Shipment ID",
+      "Supplier",
+      "Status",
+      "Amount (USDC)",
+      "Created",
+    ];
+    const rows = selectedShipments.map((shipment) => [
+      shipment.id,
+      shipment.supplierAddress,
+      shipment.status,
+      stroopsToUsdc(shipment.totalAmount),
+      shipment.createdAt,
+    ]);
+    const csv = [header, ...rows]
+      .map((row) =>
+        row.map((value) => `"${value.replaceAll('"', '""')}"`).join(","),
+      )
+      .join("\n");
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "chainsettle-shipments.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const performBulkCancel = async () => {
+    if (!address) return;
+    setBulkActionLoading(true);
+    setBulkActionError(null);
+    try {
+      const cancelledIds = new Set(
+        cancellableShipments.map((shipment) => shipment.id),
+      );
+      for (const shipment of cancellableShipments) {
+        await cancelShipment({
+          callerAddress: address,
+          shipmentId: shipment.id,
+        });
+        await shipmentsApi.sync(shipment.id);
+      }
+      setSelectedIds((current) =>
+        current.filter((id) => !cancelledIds.has(id)),
+      );
+      setCancelModalOpen(false);
+    } catch (err: any) {
+      setBulkActionError(
+        err?.message ?? "Some shipments could not be cancelled.",
+      );
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const updateSort = (nextKey: SortKey) => {
+    const params = new URLSearchParams(searchParams as any);
+    const nextDirection =
+      sortKey === nextKey && sortDirection === "asc" ? "desc" : "asc";
+    params.set("sort", nextKey);
+    params.set("direction", nextDirection);
+    router.replace(`/dashboard/shipments?${params.toString()}`);
+  };
+
+  const sortIcon = (key: SortKey) => {
+    if (sortKey !== key)
+      return <ArrowUpDown className="w-3.5 h-3.5 text-gray-300" />;
+    return sortDirection === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-brand-600" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-brand-600" />
+    );
+  };
+
+  const canBulkCancel = Boolean(address);
+
   return (
     <div>
       {/* Header */}
@@ -244,9 +399,9 @@ function ShipmentsPageContent() {
                 onClick={() => {
                   const params = new URLSearchParams(searchParams as any);
                   if (tab.value) {
-                    params.set('status', tab.value);
+                    params.set("status", tab.value);
                   } else {
-                    params.delete('status');
+                    params.delete("status");
                   }
                   router.replace(
                     `/dashboard/shipments${params.toString() ? `?${params.toString()}` : ''}`,
@@ -254,8 +409,8 @@ function ShipmentsPageContent() {
                 }}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
                   isActive
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    ? "bg-slate-900 text-white"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                 }`}
               >
                 {tab.label} ({count})
@@ -430,6 +585,51 @@ function ShipmentsPageContent() {
             onNext={() => setPage((p) => p + 1)}
           />
         </>
+      )}
+
+      {cancelModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4"
+          role="presentation"
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bulk-cancel-title"
+          >
+            <h2
+              id="bulk-cancel-title"
+              className="mb-2 text-lg font-semibold text-gray-900"
+            >
+              Cancel selected shipments?
+            </h2>
+            <p className="mb-5 text-sm leading-6 text-gray-500">
+              This will submit cancellation transactions for{" "}
+              {cancellableShipments.length} active shipment
+              {cancellableShipments.length === 1 ? "" : "s"}. This action cannot
+              be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCancelModalOpen(false)}
+                disabled={bulkActionLoading}
+                className="btn-secondary text-sm"
+              >
+                Keep shipments
+              </button>
+              <button
+                type="button"
+                onClick={() => void performBulkCancel()}
+                disabled={bulkActionLoading}
+                className="btn-danger text-sm"
+              >
+                {bulkActionLoading ? "Cancelling..." : "Cancel shipments"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
