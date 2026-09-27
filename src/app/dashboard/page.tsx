@@ -2,11 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useWallet } from "@/hooks/useWallet";
-import { deriveUserRole } from "@/lib/escrow/roles";
-import { stroopsToUsdc } from "@/lib/format";
-import { fetchShipments } from "@/lib/api/services";
-import type { Shipment, Milestone, UserRole } from "@/types";
+import { useAuthStore } from "@/lib/hooks/use-auth-store";
+import { deriveUserRole, stroopsToUsdc } from "@/lib/utils";
+import { shipmentsApi } from "@/lib/api/services";
+import type { Shipment, Milestone } from "@/types";
 
 interface StatCardProps {
   label: string;
@@ -36,7 +35,7 @@ function isActive(shipment: Shipment): boolean {
 
 function milestoneNeedsAction(
   milestone: Milestone,
-  role: UserRole | null,
+  role: string | null,
 ): boolean {
   if (!role) return false;
   if (role === "supplier") return milestone.status === "Pending";
@@ -46,7 +45,7 @@ function milestoneNeedsAction(
 }
 
 export default function DashboardOverviewPage() {
-  const { address } = useWallet();
+  const { address } = useAuthStore();
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -55,9 +54,10 @@ export default function DashboardOverviewPage() {
     let cancelled = false;
     setLoading(true);
     setError(false);
-    fetchShipments()
-      .then((data) => {
-        if (!cancelled) setShipments(data);
+    shipmentsApi
+      .list({ limit: 100 })
+      .then((res) => {
+        if (!cancelled) setShipments(res.data);
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -86,7 +86,7 @@ export default function DashboardOverviewPage() {
 
     const attention: { shipment: Shipment; milestone: Milestone }[] = [];
     for (const shipment of shipments) {
-      const role = deriveUserRole(shipment, address);
+      const role = deriveUserRole(address, shipment);
       for (const milestone of shipment.milestones ?? []) {
         if (milestoneNeedsAction(milestone, role)) {
           attention.push({ shipment, milestone });
@@ -167,9 +167,9 @@ export default function DashboardOverviewPage() {
                   className="flex items-center justify-between py-2 text-sm hover:text-blue-600"
                 >
                   <span className="font-medium text-gray-900">
-                    {shipment.title ?? shipment.id}
+                    {shipment.id}
                   </span>
-                  <span className="text-gray-500">{milestone.title}</span>
+                  <span className="text-gray-500">{milestone.name}</span>
                 </Link>
               </li>
             ))}

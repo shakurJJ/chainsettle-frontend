@@ -9,6 +9,7 @@ import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { MilestoneTimeline } from '@/components/milestones/MilestoneTimeline';
 import { ShipmentMeta } from '@/components/shipments/ShipmentMeta';
 import { ShipmentProgress } from '@/components/shipments/ShipmentProgress';
+import { ShipmentComments } from '@/components/shipments/ShipmentComments';
 import { shipmentStatusBadge, timeAgo, deriveUserRole, roleBadge } from '@/lib/utils';
 import type { Shipment } from '@/types';
 
@@ -180,6 +181,16 @@ export default function ShipmentDetailPage() {
           shipment={shipment}
           userRole={userRole}
           onUpdate={onMilestoneUpdate}
+        />
+      </div>
+
+      {/* Discussion & Notes Thread */}
+      <div className="mt-5">
+        <ShipmentComments
+          shipment={shipment}
+          userRole={userRole}
+          currentUserAddress={address}
+          lastUpdated={lastUpdated}
         />
       </div>
 

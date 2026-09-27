@@ -169,10 +169,7 @@ function MilestoneRow({
   return (
     <div
       id={`milestone-${milestone.id}`}
-      className={cn(
-        'p-5 transition-colors duration-500',
-        isSelected && 'bg-brand-50/50 ring-2 ring-inset ring-brand-200',
-      )}
+      className="p-5 transition-colors duration-500"
     >
       <div className="flex items-start gap-4">
         {/* Status icon */}

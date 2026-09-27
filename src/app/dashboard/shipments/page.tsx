@@ -1,9 +1,20 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Download, Plus, Package, Search, SlidersHorizontal, X } from 'lucide-react';
+import {
+  Download,
+  Plus,
+  Package,
+  Search,
+  SlidersHorizontal,
+  X,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Loader2,
+} from 'lucide-react';
 import { shipmentsApi } from '@/lib/api/services';
 import { cancelShipment } from '@/lib/stellar/contract';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -82,7 +93,7 @@ function ShipmentsPageContent() {
       })
       .then((res) => {
         setShipments(res.data);
-        setTotalPages(res.meta.totalPages);
+        setTotalPages(res.totalPages ?? res.meta?.totalPages ?? 1);
         setSelectedIds([]);
       })
       .catch(console.error)
@@ -118,10 +129,10 @@ function ShipmentsPageContent() {
           ]);
 
         setStatusCounts({
-          All: allRes.meta.total,
-          Active: activeRes.meta.total,
-          Completed: completedRes.meta.total,
-          Cancelled: cancelledRes.meta.total,
+          All: allRes.total ?? allRes.meta?.total ?? 0,
+          Active: activeRes.total ?? activeRes.meta?.total ?? 0,
+          Completed: completedRes.total ?? completedRes.meta?.total ?? 0,
+          Cancelled: cancelledRes.total ?? cancelledRes.meta?.total ?? 0,
         });
       } catch (err) {
         console.error(err);
@@ -219,6 +230,21 @@ function ShipmentsPageContent() {
     URL.revokeObjectURL(url);
   };
 
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [bulkActionError, setBulkActionError] = useState<string | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+
+  const requestedSort = searchParams?.get("sort");
+  const requestedDirection = searchParams?.get("direction");
+  const sortKey: SortKey = validSortKeys.includes(requestedSort as SortKey)
+    ? (requestedSort as SortKey)
+    : "createdAt";
+  const sortDirection: SortDirection = validSortDirections.includes(
+    requestedDirection as SortDirection,
+  )
+    ? (requestedDirection as SortDirection)
+    : "desc";
+
   const sortedShipments = useMemo(
     () =>
       [...filtered].sort((left, right) => {
@@ -314,6 +340,9 @@ function ShipmentsPageContent() {
     link.click();
     URL.revokeObjectURL(url);
   };
+
+  const toggleSelectAll = toggleAllVisible;
+  const cancelSelected = () => setCancelModalOpen(true);
 
   const performBulkCancel = async () => {
     if (!address) return;
@@ -574,7 +603,7 @@ function ShipmentsPageContent() {
                 key={shipment.id}
                 shipment={shipment}
                 selected={selectedIds.includes(shipment.id)}
-                onSelect={(selected) => toggleSelection(shipment.id, selected)}
+                onSelect={() => toggleSelection(shipment.id)}
               />
             ))}
           </div>

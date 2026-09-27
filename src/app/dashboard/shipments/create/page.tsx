@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { createShipment } from '@/lib/stellar/contract';
 import { shipmentsApi } from '@/lib/api/services';
@@ -11,6 +11,7 @@ import { generateShipmentId, usdcToStroops } from '@/lib/utils';
 import type { CreateMilestoneInput } from '@/types';
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
+const HIGH_VALUE_THRESHOLD_USDC = 10_000;
 const DEFAULT_MILESTONES: CreateMilestoneInput[] = [
   { name: 'Goods Dispatched', paymentPercent: 25 },
   { name: 'In Transit', paymentPercent: 50 },
@@ -34,6 +35,7 @@ export default function CreateShipmentPage() {
   const errorId = useId();
   const txStepId = useId();
   const errorRef = useRef<HTMLDivElement>(null);
+  const [confirmationOpen, setConfirmationOpen] = useState(false);
 
   const [shipmentId, setShipmentId] = useState(generateShipmentId);
   const [supplierAddress, setSupplierAddress] = useState('');
@@ -118,7 +120,7 @@ export default function CreateShipmentPage() {
     try {
       setTxStep('Building transaction…');
       const txHash = await createShipment({
-        callerAddress: address,
+        callerAddress: address!,
         shipmentId,
         supplier: supplierAddress,
         logistics: logisticsAddress,
@@ -131,7 +133,7 @@ export default function CreateShipmentPage() {
       setTxStep('Saving to backend…');
       await shipmentsApi.create({
         shipmentId,
-        buyerAddress: address,
+        buyerAddress: address!,
         supplierAddress,
         logisticsAddress,
         arbiterAddress,
