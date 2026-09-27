@@ -13,6 +13,7 @@ import type {
   Milestone,
   Notification,
   User,
+  ChainEvent,
   CreateShipmentInput,
 } from '@/types';
 
@@ -111,8 +112,11 @@ export const eventsApi = {
     shipmentId?: string;
     page?: number;
     limit?: number;
-  }) => {
-    const { data } = await apiClient.get('/events', { params });
+  }): Promise<PaginatedResponse<ChainEvent>> => {
+    const { data } = await apiClient.get<ApiResponse<PaginatedResponse<ChainEvent>>>(
+      '/events',
+      { params },
+    );
     return data.data;
   },
 };

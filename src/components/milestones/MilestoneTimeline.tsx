@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   CheckCircle2,
   Clock,
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function MilestoneTimeline({ shipment, userRole, onUpdate }: Props) {
+  const t = useTranslations('milestones');
   const [error, setError] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +82,7 @@ function MilestoneRow({
   isLast: boolean;
   onError: (msg: string) => void;
 }) {
+  const t = useTranslations('milestones');
   const { address } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [proofInput, setProofInput] = useState('');
@@ -106,7 +109,7 @@ function MilestoneRow({
       await fn();
       onUpdate();
     } catch (err: any) {
-      onError(err?.message ?? 'Transaction failed');
+      onError(err?.message ?? t('transactionFailed'));
     } finally {
       setLoading(false);
     }
@@ -114,7 +117,7 @@ function MilestoneRow({
 
   const handleSubmitProof = () =>
     wrap(async () => {
-      if (!proofInput.trim()) throw new Error('Please enter an IPFS hash or proof URL');
+      if (!proofInput.trim()) throw new Error(t('proofRequired'));
       await submitProof({
         callerAddress: address!,
         shipmentId: shipment.id,
@@ -199,13 +202,13 @@ function MilestoneRow({
           </div>
 
           <p className="text-xs text-gray-400 mb-2">
-            {percent}% of total — <span className="font-medium text-gray-600">${milestoneUsdc} USDC</span>
+            {t('percentOfTotal', { percent })} — <span className="font-medium text-gray-600">${milestoneUsdc} USDC</span>
           </p>
 
           {/* Proof hash (if submitted) */}
           {milestone.proofHash && (
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="text-xs text-gray-400">Proof:</span>
+              <span className="text-xs text-gray-400">{t('proofLabel')}</span>
               <a
                 href={
                   milestone.proofHash.startsWith('ipfs://')
@@ -215,7 +218,7 @@ function MilestoneRow({
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs text-brand-600 hover:underline font-mono truncate max-w-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
-                aria-label="View proof hash (opens in new tab)"
+                aria-label={t('viewProofAria')}
               >
                 {milestone.proofHash}
               </a>
@@ -225,16 +228,16 @@ function MilestoneRow({
           {/* Payment released */}
           {milestone.paymentReleased && (
             <p className="text-xs text-green-600 font-medium mb-2">
-              ✓ ${stroopsToUsdc(milestone.paymentReleased)} USDC released
+              {t('paymentReleased', { amount: stroopsToUsdc(milestone.paymentReleased) })}
             </p>
           )}
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2 mt-3">
             {loading && (
-              <div className="flex items-center gap-1.5 text-xs text-gray-500" aria-live="polite" aria-label="Transaction in progress">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500" aria-live="polite" aria-label={t('transactionInProgressAria')}>
                 <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-                Waiting for Freighter…
+                {t('waitingForFreighter')}
               </div>
             )}
 
@@ -245,61 +248,71 @@ function MilestoneRow({
                   <div className="flex items-center gap-2 w-full">
                     <input
                       type="text"
-                      placeholder="ipfs://Qm... or https://..."
+                      placeholder={t('proofPlaceholder')}
                       value={proofInput}
                       onChange={(e) => setProofInput(e.target.value)}
-                      className="input flex-1 text-xs"
-                      onKeyDown={(e) => e.key === 'Enter' && handleSubmitProof()}
-                      aria-label="Proof hash input"
+                      className="input flex-1 text-sm"
+                      aria-label={t('proofInputAria')}
                     />
-                    <button onClick={handleSubmitProof} className="btn-primary text-xs">
-                      Submit
+                    <button
+                      onClick={handleSubmitProof}
+                      disabled={loading}
+                      className="btn-primary text-xs px-3 py-1.5"
+                    >
+                      {t('submit')}
                     </button>
                     <button
-                      onClick={() => setShowProofInput(false)}
-                      className="btn-ghost text-xs"
+                      onClick={() => {
+                        setShowProofInput(false);
+                        setProofInput('');
+                      }}
+                      className="btn-secondary text-xs px-3 py-1.5"
                     >
-                      Cancel
+                      {t('cancel')}
                     </button>
                   </div>
                 ) : (
                   <button
                     onClick={() => setShowProofInput(true)}
-                    className="btn-secondary text-xs"
+                    className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5"
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                    Submit proof
+                    <Upload className="w-3.5 h-3.5" aria-hidden="true" />
+                    {t('submitProof')}
                   </button>
                 )}
               </>
             )}
 
-            {/* Confirm / Dispute */}
-            {!loading && (
-              <>
-                {canConfirm && (
-                  <button onClick={handleConfirm} className="btn-primary text-xs">
-                    <ThumbsUp className="w-3.5 h-3.5" />
-                    Confirm & release
-                  </button>
-                )}
-                {canDispute && (
-                  <button onClick={handleDispute} className="btn-danger text-xs">
-                    <XCircle className="w-3.5 h-3.5" />
-                    Dispute
-                  </button>
-                )}
-              </>
+            {/* Confirm */}
+            {canConfirm && !loading && (
+              <button
+                onClick={handleConfirm}
+                className="btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5"
+              >
+                <ThumbsUp className="w-3.5 h-3.5" aria-hidden="true" />
+                {t('confirmReceipt')}
+              </button>
             )}
 
+            {/* Dispute */}
+            {canDispute && !loading && (
+              <button
+                onClick={handleDispute}
+                className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1.5 text-red-600 hover:text-red-700"
+              >
+                <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                {t('raiseDispute')}
+              </button>
+            )}
           </div>
 
-          {/* Arbiter dispute panel */}
+          {/* Arbiter panel */}
           {isArbiterOnDisputed && (
             <ArbiterPanel
-              milestone={milestone}
               shipment={shipment}
+              milestone={milestone}
               onUpdate={onUpdate}
+              onError={onError}
             />
           )}
         </div>

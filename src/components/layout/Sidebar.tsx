@@ -9,6 +9,7 @@ import {
   LogOut,
   ShieldCheck,
   Activity,
+  LayoutDashboard,
   X,
   Settings,
 } from 'lucide-react';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
 
 const NAV_ITEMS = [
+  { href: '/dashboard', labelKey: 'overview', icon: LayoutDashboard, exact: true },
   { href: '/dashboard/shipments', labelKey: 'shipments', icon: Package },
   { href: '/notifications', labelKey: 'notifications', icon: Bell },
   { href: '/dashboard/events', labelKey: 'chainEvents', icon: Activity },
@@ -106,8 +108,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.map(({ href, labelKey, icon: Icon }) => {
-          const active = pathname.startsWith(href);
+        {NAV_ITEMS.map(({ href, labelKey, icon: Icon, exact }) => {
+          const active = exact ? pathname === href : pathname.startsWith(href);
           const isNotifications = labelKey === 'notifications';
           return (
             <Link

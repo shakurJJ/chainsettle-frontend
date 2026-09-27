@@ -32,5 +32,105 @@
       "noResultsTitle": "No results found",
       "noResultsDescription": "No shipments match your current search or filter."
     }
+  },
+  "events": {
+    "title": "Chain Events",
+    "eventCount": "{count, plural, =1 {# event found} other {# events found}}",
+    "filterPlaceholder": "Filter by shipment ID...",
+    "clearFilter": "Clear filter",
+    "columns": {
+      "event": "Event",
+      "shipment": "Shipment",
+      "ledger": "Ledger",
+      "txHash": "Tx hash",
+      "time": "Time"
+    },
+    "empty": {
+      "title": "No chain events yet",
+      "description": "On-chain contract events will appear here once they are indexed.",
+      "noResultsTitle": "No events found",
+      "noResultsDescription": "No events match the current shipment filter."
+    }
+  },
+  "settings": {
+    "title": "Profile & settings",
+    "description": "Manage your connected Stellar account.",
+    "connectedAccount": "Connected account",
+    "network": "Network",
+    "copyAddress": "Copy address",
+    "copied": "Copied!",
+    "viewOnStellarExpert": "View on Stellar Expert",
+    "disconnectWallet": "Disconnect wallet",
+    "notConnected": "No wallet connected",
+    "notConnectedDescription": "Connect a Stellar wallet to manage your shipments.",
+    "connectWallet": "Connect wallet"
+  },
+  "shipments": {
+    "title": "Shipment",
+    "shipmentId": "Shipment ID",
+    "status": "Status",
+    "origin": "Origin",
+    "destination": "Destination",
+    "carrier": "Carrier",
+    "createdAt": "Created",
+    "updatedAt": "Last updated",
+    "milestoneCount": "{count, plural, =1 {# milestone} other {# milestones}}",
+    "statuses": {
+      "created": "Created",
+      "inTransit": "In transit",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "disputed": "Disputed"
+    },
+    "empty": {
+      "title": "No shipment found",
+      "description": "This shipment does not exist or you do not have access to it."
+    }
+  },
+  "milestones": {
+    "title": "Milestones",
+    "milestoneCount": "{count, plural, =1 {# milestone} other {# milestones}}",
+    "addMilestone": "Add milestone",
+    "confirmMilestone": "Confirm milestone",
+    "disputeMilestone": "Dispute milestone",
+    "completed": "Completed",
+    "pending": "Pending",
+    "disputed": "Disputed",
+    "empty": {
+      "title": "No milestones yet",
+      "description": "Milestones will appear here as the shipment progresses."
+    }
+  },
+  "arbiter": {
+    "title": "Arbiter",
+    "resolveDispute": "Resolve dispute",
+    "releaseFunds": "Release funds",
+    "refundBuyer": "Refund buyer",
+    "disputeCount": "{count, plural, =1 {# open dispute} other {# open disputes}}",
+    "noDisputes": "No open disputes",
+    "resolutionNote": "Resolution note"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllAsRead": "Mark all as read",
+    "unreadCount": "{count, plural, =1 {# unread notification} other {# unread notifications}}",
+    "empty": {
+      "title": "No notifications",
+      "description": "You are all caught up."
+    }
+  },
+  "errors": {
+    "generic": "Something went wrong",
+    "genericDescription": "An unexpected error occurred. Please try again.",
+    "tryAgain": "Try again",
+    "goHome": "Go home",
+    "notFound": "Page not found",
+    "notFoundDescription": "The page you are looking for does not exist.",
+    "shipmentNotFound": "Shipment not found",
+    "shipmentNotFoundDescription": "The shipment you are looking for does not exist or has been removed.",
+    "backToShipments": "Back to shipments",
+    "walletConnectionFailed": "Failed to connect wallet",
+    "transactionFailed": "Transaction failed",
+    "loadFailed": "Failed to load data"
   }
 }
