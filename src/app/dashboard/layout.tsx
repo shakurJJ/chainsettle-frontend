@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { KeyboardShortcuts } from '@/components/layout/KeyboardShortcuts';
+import { CommandPalette } from '@/components/CommandPalette';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,6 +31,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <KeyboardShortcuts />
+      <CommandPalette />
 
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar onMenuClick={() => setSidebarOpen((v) => !v)} />
