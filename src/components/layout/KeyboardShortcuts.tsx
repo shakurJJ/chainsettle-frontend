@@ -5,6 +5,7 @@ import { Keyboard, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const shortcuts = [
+  { key: "Cmd+K", description: "Open command palette" },
   { key: "/", description: "Focus shipment search" },
   { key: "n", description: "Create a new shipment" },
   { key: "?", description: "Show keyboard shortcuts" },
