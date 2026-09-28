@@ -26,13 +26,37 @@ export function ShipmentCard({
   const releasedUsdc = stroopsToUsdc(shipment.releasedAmount);
 
   return (
-    <Link href={`/dashboard/shipments/${shipment.id}`} aria-label={`Shipment ${shipment.id}, ${shipment.status}, $${totalUsdc} total`}>
-      <div className="card p-5 hover:shadow-md hover:border-gray-200 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-semibold text-gray-900 font-mono">{shipment.id}</span>
-              <span className={shipmentStatusBadge(shipment.status)}>{shipment.status}</span>
+    <div className="card p-5 hover:shadow-md hover:border-gray-200 transition-all cursor-pointer group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start gap-3 min-w-0">
+          {onSelect && (
+            <button
+              type="button"
+              aria-label={`${selected ? 'Deselect' : 'Select'} shipment ${shipment.id}`}
+              aria-pressed={selected}
+              onClick={() => onSelect(!selected)}
+              className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded border transition-colors ${selected ? 'border-brand-600 bg-brand-600 text-white' : 'border-gray-300 bg-white text-transparent hover:border-brand-400'}`}
+            >
+              <Check className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <Link
+            href={`/dashboard/shipments/${shipment.id}`}
+            className="min-w-0"
+          >
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-semibold text-gray-900 font-mono">
+                  {shipment.id}
+                </span>
+                <span className={shipmentStatusBadge(shipment.status)}>
+                  {shipment.status}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400">
+                Supplier: {shortAddress(shipment.supplierAddress)} ·{' '}
+                {timeAgo(shipment.createdAt)}
+              </p>
             </div>
           </Link>
         </div>

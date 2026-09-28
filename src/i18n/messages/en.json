@@ -1,5 +1,6 @@
 {
   "navigation": {
+    "overview": "Overview",
     "shipments": "Shipments",
     "notifications": "Notifications",
     "chainEvents": "Chain Events",
@@ -55,6 +56,21 @@
   "settings": {
     "title": "Profile & settings",
     "description": "Manage your connected Stellar account.",
+    "subtitle": "Manage your connected Stellar account and preferences.",
+    "walletProfile": "Wallet profile",
+    "displayName": "Display name",
+    "displayNamePlaceholder": "Enter display name...",
+    "saveName": "Save name",
+    "notificationPreferences": "Notification preferences",
+    "shipmentUpdates": "Shipment updates",
+    "shipmentUpdatesDescription": "Get notified when shipment status changes",
+    "milestoneUpdates": "Milestone updates",
+    "milestoneUpdatesDescription": "Get notified about milestone confirmations and disputes",
+    "systemAlerts": "System alerts",
+    "systemAlertsDescription": "Receive notices about contract operations and network status",
+    "stellarAddress": "Stellar address",
+    "walletBalance": "Wallet balance",
+    "balanceUnavailable": "Unable to load wallet balance",
     "connectedAccount": "Connected account",
     "network": "Network",
     "copyAddress": "Copy address",
@@ -132,5 +148,10 @@
     "walletConnectionFailed": "Failed to connect wallet",
     "transactionFailed": "Transaction failed",
     "loadFailed": "Failed to load data"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "description": "Sorry, we could not find the page you are looking for.",
+    "backToDashboard": "Back to dashboard"
   }
 }

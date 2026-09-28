@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-
-import { EmptyState } from '@/components/ui/EmptyState';
+import { Package } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 
 export default function ShipmentNotFound() {
   const t = useTranslations('shipments');
@@ -9,6 +9,7 @@ export default function ShipmentNotFound() {
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
       <EmptyState
+        icon={Package}
         title={t('notFound.title')}
         description={t('notFound.description')}
         action={

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, Wallet, ShieldCheck, Zap, Globe } from 'lucide-react';
+import { Loader2, Wallet, ShieldCheck, Zap, Globe, X, ExternalLink } from 'lucide-react';
 import { connectFreighter, isFreighterInstalled, signNonce } from '@/lib/stellar/freighter';
 import { authApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -21,6 +21,8 @@ function LoginPageContent() {
   const [step, setStep] = useState<Step>("idle");
   const [error, setError] = useState<string | null>(null);
   const [hasFreighter, setHasFreighter] = useState<boolean | null>(null);
+  const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [checkingFreighter, setCheckingFreighter] = useState(false);
   const errorRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLDivElement>(null);
 
@@ -189,9 +191,14 @@ function LoginPageContent() {
                     >
                       {isDone ? '✓' : i + 1}
                     </div>
-                  );
-                },
-              )}
+                    <span
+                      className={isCurrent ? 'text-gray-900 font-medium' : 'text-gray-400'}
+                    >
+                      {stepLabel[s]}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

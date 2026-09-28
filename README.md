@@ -1,4 +1,4 @@
-﻿# ChainSettle — Frontend Repo
+# ChainSettle — Frontend Repo
 
 > **Next.js 14 frontend for milestone-based supply chain escrow on Stellar**
 
@@ -70,6 +70,75 @@ This repo now includes a complete set of UI improvements for the shipment list a
 - Supports dynamic milestone row add/remove with real-time total recalculation.
 
 These updates improve reliability and reduce contract submission failures by catching invalid milestone splits in the UI.
+
+### Shipment discussion & notes thread (#65)
+
+- Added a comments and discussion thread on the shipment detail page (`/dashboard/shipments/[id]`).
+- Rendered via `src/components/shipments/ShipmentComments.tsx` under the milestone timeline.
+- Counterparties (`buyer`, `supplier`, `logistics`) and the `arbiter` can post and view notes to coordinate delivery and resolve disputes with complete context.
+- Observers and non-participants see a read-only view with comment posting restricted.
+- Each comment displays:
+  - Author address linked to Stellar Expert explorer via `StellarLink`.
+  - Author role badge (`Buyer`, `Supplier`, `Logistics`, `Arbiter`, or `Read-only`) styled according to the design system.
+  - Relative timestamp (`timeAgo`).
+- Text content is rendered safely (`whitespace-pre-wrap break-words`) to support natural multiline formatting without HTML or XSS injection risks.
+- Enforces a 1,000 character maximum limit with a live character counter and keyboard shortcut (`Ctrl+Enter` / `Cmd+Enter` to submit).
+- Full empty state and loading skeleton states included.
+- Automatic 15-second background polling synchronized with shipment status refreshes, manual sync, and interval timers.
+- Typed REST client wrappers added in `src/lib/api/services.ts` (`commentsApi.list(shipmentId)`, `commentsApi.create(shipmentId, body)`) and data types in `src/types/index.ts` (`Comment`, `CreateCommentInput`).
+
+#### Expected Backend API Contract
+
+The frontend expects the following REST endpoints on the backend service (`chainsetttle-backend`):
+
+##### 1. List Comments
+- **Method & Route**: `GET /shipments/:id/comments`
+- **Auth**: Optional / Bearer JWT
+- **Response**: `200 OK`
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "comment_abc123",
+      "shipmentId": "SHIP-20260927-ABCD",
+      "authorAddress": "GAA...",
+      "authorRole": "BUYER",
+      "content": "Customs clearance paperwork has been uploaded for Milestone 2.",
+      "createdAt": "2026-09-27T14:30:00.000Z",
+      "updatedAt": "2026-09-27T14:30:00.000Z"
+    }
+  ]
+}
+```
+
+##### 2. Create Comment
+- **Method & Route**: `POST /shipments/:id/comments`
+- **Auth**: Required (`Authorization: Bearer <jwt>`)
+- **Headers**: `Content-Type: application/json`
+- **Request Body**:
+```json
+{
+  "content": "Customs clearance paperwork has been uploaded for Milestone 2."
+}
+```
+- **Validation**:
+  - `content`: string, non-empty, max 1000 characters.
+  - User extracted from JWT must be a party to the shipment (`buyerAddress`, `supplierAddress`, `logisticsAddress`, `arbiterAddress`). Non-parties receive `403 Forbidden`.
+- **Response**: `201 Created`
+```json
+{
+  "success": true,
+  "data": {
+    "id": "comment_abc124",
+    "shipmentId": "SHIP-20260927-ABCD",
+    "authorAddress": "GAA...",
+    "authorRole": "BUYER",
+    "content": "Customs clearance paperwork has been uploaded for Milestone 2.",
+    "createdAt": "2026-09-27T14:30:00.000Z"
+  }
+}
+```
 
 ---
 

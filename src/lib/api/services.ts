@@ -15,6 +15,7 @@ import type {
   User,
   ChainEvent,
   CreateShipmentInput,
+  Comment,
 } from '@/types';
 
 // ----------------------------------------------------------------
@@ -146,3 +147,35 @@ export const notificationsApi = {
     await apiClient.patch('/notifications/read-all');
   },
 };
+
+// ----------------------------------------------------------------
+// Comments
+// ----------------------------------------------------------------
+
+export const commentsApi = {
+  /** List all comments for a shipment */
+  list: async (shipmentId: string): Promise<Comment[]> => {
+    const { data } = await apiClient.get<ApiResponse<Comment[]> | Comment[]>(
+      `/shipments/${shipmentId}/comments`,
+    );
+    if (Array.isArray(data)) return data;
+    if (Array.isArray((data as ApiResponse<Comment[]>).data)) {
+      return (data as ApiResponse<Comment[]>).data;
+    }
+    return (data as any)?.data?.data ?? [];
+  },
+
+  /** Create a comment on a shipment */
+  create: async (
+    shipmentId: string,
+    body: string | { content: string },
+  ): Promise<Comment> => {
+    const payload = typeof body === 'string' ? { content: body } : body;
+    const { data } = await apiClient.post<ApiResponse<Comment> | Comment>(
+      `/shipments/${shipmentId}/comments`,
+      payload,
+    );
+    return (data as ApiResponse<Comment>).data ?? (data as Comment);
+  },
+};
+

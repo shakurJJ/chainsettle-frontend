@@ -11,9 +11,10 @@ interface ArbiterPanelProps {
   milestone: Milestone;
   shipment: Shipment;
   onUpdate: () => void;
+  onError?: (msg: string) => void;
 }
 
-export function ArbiterPanel({ milestone, shipment, onUpdate }: ArbiterPanelProps) {
+export function ArbiterPanel({ milestone, shipment, onUpdate, onError }: ArbiterPanelProps) {
   const { address } = useAuthStore();
   const [loading, setLoading] = useState<'approve' | 'reject' | null>(null);
   const [confirmAction, setConfirmAction] = useState<'approve' | 'reject' | null>(null);

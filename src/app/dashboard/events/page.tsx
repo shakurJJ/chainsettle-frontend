@@ -1,18 +1,19 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { eventsApi } from '@/lib/api/services';
-import type { ChainEvent, PaginatedResponse } from '@/lib/api/types';
-import { StellarLink } from '@/components/ui/StellarLink';
-import { Pagination } from '@/components/ui/Pagination';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { timeAgo } from '@/lib/utils/time';
+import type { ChainEvent, PaginatedResponse } from '@/types';
+import { StellarLink } from '@/components/StellarLink';
+import { Pagination } from '@/components/Pagination';
+import { EmptyState } from '@/components/EmptyState';
+import { timeAgo } from '@/lib/utils';
+import { Activity } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
-export default function EventsPage() {
+function EventsPageContent() {
   const t = useTranslations('events');
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -109,7 +110,7 @@ export default function EventsPage() {
           </table>
         </div>
       ) : events.length === 0 ? (
-        <EmptyState title={t('emptyTitle')} description={t('emptyDescription')} />
+        <EmptyState icon={Activity} title={t('emptyTitle')} description={t('emptyDescription')} />
       ) : (
         <>
           <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -134,7 +135,7 @@ export default function EventsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 bg-white">
-                {events.map((event) => (
+                {events.map((event: ChainEvent) => (
                   <tr key={event.id}>
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
                       {event.eventName}
@@ -152,7 +153,7 @@ export default function EventsPage() {
                       <StellarLink type="tx" value={event.txHash} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
-                      {timeAgo(event.createdAt)}
+                      {timeAgo(event.createdAt ?? event.timestamp ?? null)}
                     </td>
                   </tr>
                 ))}
@@ -161,12 +162,22 @@ export default function EventsPage() {
           </div>
 
           <Pagination
-            currentPage={page}
+            page={page}
             totalPages={totalPages}
-            onPageChange={(next) => updateParams({ page: next })}
+            onPrev={() => updateParams({ page: page - 1 })}
+            onNext={() => updateParams({ page: page + 1 })}
           />
         </>
       )}
     </div>
   );
 }
+
+export default function EventsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-gray-500">Loading events...</div>}>
+      <EventsPageContent />
+    </Suspense>
+  );
+}
+
