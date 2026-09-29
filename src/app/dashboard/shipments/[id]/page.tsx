@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, RefreshCw, Loader2, Printer } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Loader2, Printer, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { shipmentsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -25,6 +25,9 @@ export default function ShipmentDetailPage() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
   const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +83,12 @@ export default function ShipmentDetailPage() {
     }
   }, [loading]);
 
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 4000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
   const handleSync = async () => {
     setSyncing(true);
     try {
@@ -94,6 +103,24 @@ export default function ShipmentDetailPage() {
   const onMilestoneUpdate = () => {
     fetchShipment(true);
     setBalanceRefreshKey((k) => k + 1);
+  };
+
+  const handleConfirmCancel = async () => {
+    setCancelling(true);
+    try {
+      await shipmentsApi.cancelShipment(id);
+      setShowCancelModal(false);
+      setToast({ type: 'success', message: 'Shipment cancelled successfully.' });
+      await shipmentsApi.sync(id);
+      await fetchShipment(true);
+      setBalanceRefreshKey((k) => k + 1);
+    } catch (err) {
+      console.error(err);
+      setShowCancelModal(false);
+      setToast({ type: 'error', message: 'Failed to cancel shipment. Please try again.' });
+    } finally {
+      setCancelling(false);
+    }
   };
 
   if (loading) {
@@ -120,6 +147,17 @@ export default function ShipmentDetailPage() {
 
   const userRole = deriveUserRole(address, shipment);
   const role = roleBadge(userRole);
+
+  const isBuyer = userRole === 'buyer';
+  const isActive = shipment.status === 'Active';
+  const blockingMilestone = shipment.milestones?.find(
+    (m) => m.status === 'ProofSubmitted' || m.status === 'Disputed'
+  );
+  const cancelDisabledReason = blockingMilestone
+    ? `Cannot cancel while a milestone is ${blockingMilestone.status}.`
+    : null;
+  const canCancel = isBuyer && isActive && !cancelDisabledReason;
+  const refundAmount = shipment.totalAmount - shipment.releasedAmount;
 
   return (
     <div>
@@ -162,19 +200,33 @@ export default function ShipmentDetailPage() {
             )}
           </div>
         </div>
-        <button
-          onClick={handleSync}
-          disabled={syncing}
-          aria-label={syncing ? 'Syncing from chain' : 'Sync from chain'}
-          className="btn-secondary text-xs"
-        >
-          {syncing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+        <div className="flex items-center gap-2">
+          {isBuyer && isActive && (
+            <button
+              onClick={() => setShowCancelModal(true)}
+              disabled={!canCancel}
+              title={cancelDisabledReason ?? 'Cancel this shipment and refund the remaining escrow'}
+              aria-label="Cancel shipment"
+              className="btn-secondary text-xs text-red-600 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+              Cancel shipment
+            </button>
           )}
-          Sync from chain
-        </button>
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            aria-label={syncing ? 'Syncing from chain' : 'Sync from chain'}
+            className="btn-secondary text-xs"
+          >
+            {syncing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+            Sync from chain
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -213,6 +265,67 @@ export default function ShipmentDetailPage() {
       <div className="mt-5">
         <ShipmentMeta shipment={shipment} />
       </div>
+
+      {/* Cancel confirmation modal */}
+      {showCancelModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-shipment-title"
+        >
+          <div className="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+            <h2 id="cancel-shipment-title" className="text-base font-semibold text-gray-900">
+              Cancel shipment?
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              This will cancel the shipment and refund the remaining escrow balance to you.
+            </p>
+            <div className="mt-4 rounded-md bg-gray-50 p-3 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">Refund amount</span>
+                <span className="font-semibold text-gray-900">
+                  {refundAmount} {shipment.currency}
+                </span>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setShowCancelModal(false)}
+                disabled={cancelling}
+                className="btn-secondary text-xs"
+              >
+                Keep shipment
+              </button>
+              <button
+                onClick={handleConfirmCancel}
+                disabled={cancelling}
+                className="btn-primary text-xs bg-red-600 hover:bg-red-700"
+              >
+                {cancelling ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                )}
+                Confirm cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`fixed bottom-4 right-4 z-50 rounded-md px-4 py-2 text-sm text-white shadow-lg ${
+            toast.type === 'success' ? 'bg-green-600' : 'bg-red-600'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }
