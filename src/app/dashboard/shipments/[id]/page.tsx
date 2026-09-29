@@ -10,6 +10,7 @@ import { MilestoneTimeline } from '@/components/milestones/MilestoneTimeline';
 import { ShipmentMeta } from '@/components/shipments/ShipmentMeta';
 import { ShipmentProgress } from '@/components/shipments/ShipmentProgress';
 import { ShipmentComments } from '@/components/shipments/ShipmentComments';
+import { EscrowBalanceCard } from '@/components/shipments/EscrowBalanceCard';
 import { shipmentStatusBadge, timeAgo, deriveUserRole, roleBadge } from '@/lib/utils';
 import type { Shipment } from '@/types';
 
@@ -23,6 +24,7 @@ export default function ShipmentDetailPage() {
   const [syncing, setSyncing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [secondsAgo, setSecondsAgo] = useState(0);
+  const [balanceRefreshKey, setBalanceRefreshKey] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
 
@@ -83,12 +85,16 @@ export default function ShipmentDetailPage() {
     try {
       await shipmentsApi.sync(id);
       await fetchShipment(true);
+      setBalanceRefreshKey((k) => k + 1);
     } finally {
       setSyncing(false);
     }
   };
 
-  const onMilestoneUpdate = () => fetchShipment(true);
+  const onMilestoneUpdate = () => {
+    fetchShipment(true);
+    setBalanceRefreshKey((k) => k + 1);
+  };
 
   if (loading) {
     return (
@@ -173,6 +179,15 @@ export default function ShipmentDetailPage() {
 
       {/* Progress bar */}
       <ShipmentProgress shipment={shipment} />
+
+      {/* Live on-chain escrow balance */}
+      <div className="mt-5">
+        <EscrowBalanceCard
+          shipment={shipment}
+          refreshKey={balanceRefreshKey}
+          onSynced={() => fetchShipment(true)}
+        />
+      </div>
 
       {/* Milestones */}
       <div className="mt-5">
