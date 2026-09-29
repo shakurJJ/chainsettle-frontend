@@ -12,12 +12,14 @@ export interface NotificationPreferences {
   shipmentUpdates: boolean;
   milestoneUpdates: boolean;
   systemAlerts: boolean;
+  desktopNotifications: boolean;
 }
 
 export const defaultNotificationPreferences: NotificationPreferences = {
   shipmentUpdates: true,
   milestoneUpdates: true,
   systemAlerts: true,
+  desktopNotifications: false,
 };
 
 interface AuthState {

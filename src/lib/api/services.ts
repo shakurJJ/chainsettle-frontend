@@ -82,6 +82,14 @@ export const shipmentsApi = {
   sync: async (id: string): Promise<void> => {
     await apiClient.post(`/shipments/${id}/sync`);
   },
+
+  /** Cancel an active shipment (buyer only) */
+  cancel: async (id: string): Promise<Shipment> => {
+    const { data } = await apiClient.post<ApiResponse<Shipment>>(
+      `/shipments/${id}/cancel`,
+    );
+    return data.data;
+  },
 };
 
 // ----------------------------------------------------------------
@@ -178,4 +186,3 @@ export const commentsApi = {
     return (data as ApiResponse<Comment>).data ?? (data as Comment);
   },
 };
-
