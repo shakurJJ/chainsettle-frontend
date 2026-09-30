@@ -1,7 +1,7 @@
 import { Horizon } from '@stellar/stellar-sdk';
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? 'testnet';
-const HORIZON_URL =
+export const HORIZON_URL =
   process.env.NEXT_PUBLIC_HORIZON_URL ??
   (NETWORK === 'mainnet'
     ? 'https://horizon.stellar.org'
