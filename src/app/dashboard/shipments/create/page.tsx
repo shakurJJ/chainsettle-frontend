@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { createShipment } from '@/lib/stellar/contract';
 import { shipmentsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useAccountExistence } from '@/lib/hooks/use-account-existence';
+import { normalizeAddress, validateParties, PARTY_ROLE_LABELS, type PartyRole } from '@/lib/stellar/address';
 import { generateShipmentId, usdcToStroops } from '@/lib/utils';
 import type { CreateMilestoneInput } from '@/types';
 
@@ -29,6 +31,75 @@ type ShipmentDraft = {
 
 const generateInputId = (suffix: string) => `create-${suffix}`;
 
+type EditableParty = Exclude<PartyRole, 'buyer'>;
+
+const NETWORK_LABEL =
+  process.env.NEXT_PUBLIC_STELLAR_NETWORK === 'mainnet' ? 'Mainnet' : 'Testnet';
+
+type AddressFieldProps = {
+  role: EditableParty;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+  error?: string;
+  touched: boolean;
+  hint?: string;
+};
+
+function AddressField({ role, label, value, onChange, onBlur, error, touched, hint }: AddressFieldProps) {
+  const inputId = generateInputId(role);
+  const hintId = `${inputId}-hint`;
+  const errorId = `${inputId}-error`;
+  const warningId = `${inputId}-warning`;
+  // Only hit Horizon once the user has left the field with a valid address
+  const existence = useAccountExistence(touched && !error ? value : '');
+
+  const describedBy = [
+    hint && hintId,
+    error && errorId,
+    !error && existence === 'missing' && warningId,
+  ].filter(Boolean).join(' ') || undefined;
+
+  return (
+    <div>
+      <label htmlFor={inputId} className="label">{label}</label>
+      <input
+        id={inputId}
+        placeholder="G..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={onBlur}
+        required
+        spellCheck={false}
+        autoComplete="off"
+        aria-invalid={error ? true : undefined}
+        aria-describedby={describedBy}
+        className={`input font-mono text-xs ${error ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : ''}`}
+      />
+      {hint && (
+        <p id={hintId} className="text-xs text-gray-400 mt-1">{hint}</p>
+      )}
+      {error ? (
+        <p id={errorId} className="text-xs text-red-600 mt-1 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+          {error}
+        </p>
+      ) : existence === 'checking' ? (
+        <p className="text-xs text-gray-400 mt-1 flex items-center gap-1" aria-live="polite">
+          <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+          Checking account on {NETWORK_LABEL}…
+        </p>
+      ) : existence === 'missing' ? (
+        <p id={warningId} className="text-xs text-amber-700 mt-1 flex items-center gap-1" aria-live="polite">
+          <AlertTriangle className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+          This account is not funded on {NETWORK_LABEL}. You can continue, but it must be activated before it can transact.
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export default function CreateShipmentPage() {
   const router = useRouter();
   const { address } = useAuthStore();
@@ -46,6 +117,12 @@ export default function CreateShipmentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txStep, setTxStep] = useState('');
+  const [touched, setTouched] = useState<Record<EditableParty, boolean>>({
+    supplier: false,
+    logistics: false,
+    arbiter: false,
+  });
+  const [submitAttempted, setSubmitAttempted] = useState(false);
   const draftLoaded = useRef(false);
 
   useEffect(() => {
@@ -58,9 +135,9 @@ export default function CreateShipmentPage() {
       try {
         const draft = JSON.parse(savedDraft) as Partial<ShipmentDraft>;
         if (draft.shipmentId) setShipmentId(draft.shipmentId);
-        if (typeof draft.supplierAddress === 'string') setSupplierAddress(draft.supplierAddress);
-        if (typeof draft.logisticsAddress === 'string') setLogisticsAddress(draft.logisticsAddress);
-        if (typeof draft.arbiterAddress === 'string') setArbiterAddress(draft.arbiterAddress);
+        if (typeof draft.supplierAddress === 'string') setSupplierAddress(normalizeAddress(draft.supplierAddress));
+        if (typeof draft.logisticsAddress === 'string') setLogisticsAddress(normalizeAddress(draft.logisticsAddress));
+        if (typeof draft.arbiterAddress === 'string') setArbiterAddress(normalizeAddress(draft.arbiterAddress));
         if (typeof draft.totalUsdc === 'string') setTotalUsdc(draft.totalUsdc);
         if (Array.isArray(draft.milestones) && draft.milestones.length) {
           setMilestones(draft.milestones);
@@ -92,6 +169,28 @@ export default function CreateShipmentPage() {
 
   const totalPercent = milestones.reduce((s, m) => s + m.paymentPercent, 0);
   const percentValid = totalPercent === 100;
+
+  const partyErrors = useMemo(
+    () =>
+      validateParties({
+        buyer: address ?? '',
+        supplier: supplierAddress,
+        logistics: logisticsAddress,
+        arbiter: arbiterAddress,
+      }),
+    [address, supplierAddress, logisticsAddress, arbiterAddress],
+  );
+
+  const visiblePartyError = (role: EditableParty) =>
+    touched[role] || submitAttempted ? partyErrors[role] : undefined;
+
+  const summaryErrors = submitAttempted
+    ? (Object.entries(partyErrors) as [PartyRole, string][])
+    : [];
+  const showErrorBanner = Boolean(error) || summaryErrors.length > 0;
+
+  const markTouched = (role: EditableParty) =>
+    setTouched((prev) => (prev[role] ? prev : { ...prev, [role]: true }));
 
   useEffect(() => {
     if (error) errorRef.current?.focus();
@@ -157,6 +256,13 @@ export default function CreateShipmentPage() {
     e.preventDefault();
     if (!address) return;
     setError(null);
+    setSubmitAttempted(true);
+    setTouched({ supplier: true, logistics: true, arbiter: true });
+
+    if (Object.keys(partyErrors).length > 0) {
+      window.requestAnimationFrame(() => errorRef.current?.focus());
+      return;
+    }
 
     if (Number(totalUsdc) >= HIGH_VALUE_THRESHOLD_USDC) {
       setConfirmationOpen(true);
@@ -183,10 +289,29 @@ export default function CreateShipmentPage() {
       </p>
       <p className="text-xs text-gray-400 mb-5">Your unfinished form is saved locally in this browser.</p>
 
-      {error && (
+      {showErrorBanner && (
         <div id={errorId} ref={errorRef} tabIndex={-1} className="mb-5 p-4 rounded-xl bg-red-50 border border-red-100 flex gap-3" role="alert" aria-live="assertive">
           <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
-          <p className="text-sm text-red-700">{error}</p>
+          <div className="space-y-1">
+            {error && <p className="text-sm text-red-700">{error}</p>}
+            {summaryErrors.length > 0 && (
+              <>
+                <p className="text-sm font-medium text-red-700">
+                  Please fix the following before signing:
+                </p>
+                <ul className="list-disc pl-4 text-sm text-red-700 space-y-0.5">
+                  {summaryErrors.map(([role, message]) => (
+                    <li key={role}>
+                      <a href={`#${generateInputId(role)}`} className="underline hover:text-red-900">
+                        {PARTY_ROLE_LABELS[role]}
+                      </a>
+                      : {message}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -228,43 +353,34 @@ export default function CreateShipmentPage() {
               <label htmlFor={generateInputId('buyer')} className="label">Your address (buyer)</label>
               <input id={generateInputId('buyer')} value={address ?? ''} readOnly className="input bg-gray-50 text-gray-500 font-mono text-xs" />
             </div>
-            <div>
-              <label htmlFor={generateInputId('supplier')} className="label">Supplier Stellar address</label>
-              <input
-                id={generateInputId('supplier')}
-                placeholder="G..."
-                value={supplierAddress}
-                onChange={(e) => setSupplierAddress(e.target.value)}
-                required
-                className="input font-mono text-xs"
-              />
-            </div>
-            <div>
-              <label htmlFor={generateInputId('logistics')} className="label">Logistics Stellar address</label>
-              <input
-                id={generateInputId('logistics')}
-                placeholder="G..."
-                value={logisticsAddress}
-                onChange={(e) => setLogisticsAddress(e.target.value)}
-                required
-                className="input font-mono text-xs"
-              />
-            </div>
-            <div>
-              <label htmlFor={generateInputId('arbiter')} className="label">Arbiter Stellar address</label>
-              <input
-                id={generateInputId('arbiter')}
-                placeholder="G..."
-                value={arbiterAddress}
-                onChange={(e) => setArbiterAddress(e.target.value)}
-                required
-                className="input font-mono text-xs"
-                aria-describedby={`${generateInputId('arbiter')}-hint`}
-              />
-              <p id={`${generateInputId('arbiter')}-hint`} className="text-xs text-gray-400 mt-1">
-                Resolves disputes. Can be a trusted third party or a DAO address.
-              </p>
-            </div>
+            <AddressField
+              role="supplier"
+              label="Supplier Stellar address"
+              value={supplierAddress}
+              onChange={(v) => setSupplierAddress(normalizeAddress(v))}
+              onBlur={() => markTouched('supplier')}
+              error={visiblePartyError('supplier')}
+              touched={touched.supplier}
+            />
+            <AddressField
+              role="logistics"
+              label="Logistics Stellar address"
+              value={logisticsAddress}
+              onChange={(v) => setLogisticsAddress(normalizeAddress(v))}
+              onBlur={() => markTouched('logistics')}
+              error={visiblePartyError('logistics')}
+              touched={touched.logistics}
+            />
+            <AddressField
+              role="arbiter"
+              label="Arbiter Stellar address"
+              value={arbiterAddress}
+              onChange={(v) => setArbiterAddress(normalizeAddress(v))}
+              onBlur={() => markTouched('arbiter')}
+              error={visiblePartyError('arbiter')}
+              touched={touched.arbiter}
+              hint="Resolves disputes. Can be a trusted third party or a DAO address."
+            />
           </div>
         </div>
 
