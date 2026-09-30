@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuthStore, type NotificationPreferences } from '@/lib/hooks/use-auth-store';
 import { useWalletBalance } from '@/lib/hooks/use-wallet-balance';
+import { TemplateManager } from '@/components/templates/TemplateManager';
 
 type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
@@ -204,6 +205,8 @@ export default function SettingsPage() {
           </button>
         </div>
       </section>
+
+      <TemplateManager owner={address} />
     </div>
   );
 }
