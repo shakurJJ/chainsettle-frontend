@@ -2,18 +2,19 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Loader2, Wallet, ShieldCheck, Zap, Globe, X, ExternalLink } from 'lucide-react';
-import { connectFreighter, isFreighterInstalled, signNonce } from '@/lib/stellar/freighter';
-import { authApi } from '@/lib/api/services';
+import { Loader2, Wallet, ShieldCheck, Zap, Globe, X, ExternalLink, Clock } from 'lucide-react';
+import { isFreighterInstalled } from '@/lib/stellar/freighter';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
-import { Networks } from '@stellar/stellar-sdk';
+import { signInWithStellar } from '@/lib/auth/sign-in';
+import { sanitizeCallbackUrl } from '@/lib/auth/session';
 
 type Step = "idle" | "connecting" | "signing" | "verifying" | "done";
 
 function LoginPageContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const callbackUrl = params.get("callbackUrl") ?? "/dashboard/shipments";
+  const callbackUrl = sanitizeCallbackUrl(params.get("callbackUrl"));
+  const sessionExpired = params.get("reason") === "expired";
 
   const setAuth = useAuthStore((s) => s.setAuth);
   const isConnected = useAuthStore((s) => s.isConnected);
@@ -49,26 +50,7 @@ function LoginPageContent() {
     }
 
     try {
-      setStep('connecting');
-      const address = await connectFreighter();
-
-      const nonce = await authApi.getNonce(address);
-
-      setStep('signing');
-      const networkPassphrase =
-        process.env.NEXT_PUBLIC_STELLAR_NETWORK === "mainnet"
-          ? Networks.PUBLIC
-          : Networks.TESTNET;
-
-      const signedNonce = await signNonce(nonce, networkPassphrase);
-
-      setStep('verifying');
-      const { accessToken, user } = await authApi.login({
-        stellarAddress: address,
-        signedNonce,
-        signature: signedNonce, // backend verifies the XDR
-      });
-
+      const { address, accessToken, user } = await signInWithStellar(setStep);
       setAuth(address, accessToken, user);
       setStep("done");
       router.replace(callbackUrl);
@@ -117,6 +99,16 @@ function LoginPageContent() {
             Connect your Freighter wallet to access your shipments. No password
             needed — your Stellar address is your identity.
           </p>
+
+          {/* Redirected here after the session expired */}
+          {sessionExpired && !error && (
+            <div className="mb-4 flex items-start gap-2.5 p-3.5 rounded-xl bg-amber-50 border border-amber-100" role="status">
+              <Clock className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+              <p className="text-sm text-amber-800">
+                Your session expired. Sign in again to continue where you left off. Any unsaved shipment draft has been kept.
+              </p>
+            </div>
+          )}
 
           {/* Freighter not installed */}
           {hasFreighter === false && (
