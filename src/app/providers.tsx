@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { SessionTimeoutModal } from '@/components/auth/SessionTimeoutModal';
 import messages from '@/i18n/messages/en.json';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <NextIntlClientProvider locale="en" messages={messages}>
       {children}
+      <SessionTimeoutModal />
     </NextIntlClientProvider>
   );
 }
