@@ -3,10 +3,11 @@
  *
  * Axios instance pre-configured for the ChainSettle backend.
  * Automatically attaches the JWT token from localStorage to every request.
- * On 401, clears the token and redirects to login.
+ * On 401, ends the session once and redirects to login with a callbackUrl.
  */
 
 import axios from 'axios';
+import { endSession } from '@/lib/auth/session';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
@@ -27,13 +28,26 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 — clear token and redirect to login
+// Endpoints that are part of the sign-in flow itself. A 401 here means the
+// signature/nonce was rejected and should surface as a login error, not
+// trigger a "session expired" redirect.
+const AUTH_FLOW_PATHS = ['/auth/nonce', '/auth/login'];
+
+function isAuthFlowRequest(url: string | undefined): boolean {
+  if (!url) return false;
+  return AUTH_FLOW_PATHS.some((path) => url.includes(path));
+}
+
+// Handle 401 — end the session (deduplicated) and redirect to login
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('chainsetttle_token');
-      window.location.href = '/auth/login';
+    if (
+      error.response?.status === 401 &&
+      typeof window !== 'undefined' &&
+      !isAuthFlowRequest(error.config?.url)
+    ) {
+      endSession('expired');
     }
     return Promise.reject(error);
   },

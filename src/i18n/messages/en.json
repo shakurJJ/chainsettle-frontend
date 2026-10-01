@@ -171,5 +171,14 @@
     "title": "Page not found",
     "description": "Sorry, we could not find the page you are looking for.",
     "backToDashboard": "Back to dashboard"
+  },
+  "session": {
+    "expiringTitle": "Your session is about to expire",
+    "expiringDescription": "For your security you will be signed out in <time>{countdown}</time>. Stay signed in to keep working — your current page and any unsaved shipment draft will be kept.",
+    "staySignedIn": "Stay signed in",
+    "renewing": "Confirm in Freighter…",
+    "logOut": "Log out",
+    "renewFailed": "Could not renew your session. Please try again.",
+    "wrongAccount": "Freighter is connected to a different account. Switch back to {address} to stay signed in, or log out."
   }
 }
