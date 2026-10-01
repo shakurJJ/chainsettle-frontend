@@ -79,7 +79,25 @@
     "disconnectWallet": "Disconnect wallet",
     "notConnected": "No wallet connected",
     "notConnectedDescription": "Connect a Stellar wallet to manage your shipments.",
-    "connectWallet": "Connect wallet"
+    "connectWallet": "Connect wallet",
+    "templates": {
+      "title": "Shipment templates",
+      "description": "Reusable milestone splits for the create-shipment form. Stored in this browser for your wallet.",
+      "yourTemplates": "Your templates",
+      "starterTemplates": "Starter templates",
+      "empty": "You have no saved templates yet. Use \"Save as template\" on the create-shipment form.",
+      "connectToManage": "Connect a wallet to manage your templates.",
+      "includesAddresses": "Includes counterparty addresses",
+      "builtIn": "Built-in",
+      "templateName": "Template name",
+      "saveName": "Save name",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "confirmDelete": "Delete this template?",
+      "renameLabel": "Rename template {name}",
+      "deleteLabel": "Delete template {name}",
+      "renameFailed": "Could not rename template."
+    }
   },
   "shipments": {
     "title": "Shipment",

@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, AlertTriangle, BookmarkPlus, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import { createShipment } from '@/lib/stellar/contract';
 import { shipmentsApi } from '@/lib/api/services';
@@ -10,6 +10,10 @@ import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { useAccountExistence } from '@/lib/hooks/use-account-existence';
 import { normalizeAddress, validateParties, PARTY_ROLE_LABELS, type PartyRole } from '@/lib/stellar/address';
 import { generateShipmentId, usdcToStroops } from '@/lib/utils';
+import { useShipmentTemplates, useTemplatesStore } from '@/lib/hooks/use-templates-store';
+import { cloneMilestones, isSavableSplit, type ShipmentTemplate } from '@/lib/templates';
+import { TemplatePicker } from '@/components/templates/TemplatePicker';
+import { SaveTemplateDialog } from '@/components/templates/SaveTemplateDialog';
 import type { CreateMilestoneInput } from '@/types';
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
@@ -124,6 +128,10 @@ export default function CreateShipmentPage() {
   });
   const [submitAttempted, setSubmitAttempted] = useState(false);
   const draftLoaded = useRef(false);
+  const [saveTemplateOpen, setSaveTemplateOpen] = useState(false);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const { templates } = useShipmentTemplates(address);
+  const saveTemplate = useTemplatesStore((state) => state.saveTemplate);
 
   useEffect(() => {
     if (!address) return;
@@ -169,6 +177,34 @@ export default function CreateShipmentPage() {
 
   const totalPercent = milestones.reduce((s, m) => s + m.paymentPercent, 0);
   const percentValid = totalPercent === 100;
+  const canSaveTemplate = !!address && isSavableSplit(milestones);
+  const hasParties = [supplierAddress, logisticsAddress, arbiterAddress].some((a) => a.trim() !== '');
+
+  // Anything beyond the untouched default form counts as user input worth protecting.
+  const milestonesEdited =
+    milestones.length !== DEFAULT_MILESTONES.length ||
+    milestones.some(
+      (m, i) => m.name !== DEFAULT_MILESTONES[i].name || m.paymentPercent !== DEFAULT_MILESTONES[i].paymentPercent,
+    );
+  const formHasInput = milestonesEdited || hasParties;
+
+  const applyTemplate = (template: ShipmentTemplate) => {
+    setMilestones(cloneMilestones(template.milestones));
+    if (template.parties?.supplierAddress) setSupplierAddress(template.parties.supplierAddress);
+    if (template.parties?.logisticsAddress) setLogisticsAddress(template.parties.logisticsAddress);
+    if (template.parties?.arbiterAddress) setArbiterAddress(template.parties.arbiterAddress);
+    setTemplateNotice(`Applied template "${template.name}".`);
+  };
+
+  const handleSaveTemplate = (name: string, includeParties: boolean) => {
+    if (!address) return;
+    const template = saveTemplate(address, {
+      name,
+      milestones,
+      parties: includeParties ? { supplierAddress, logisticsAddress, arbiterAddress } : undefined,
+    });
+    setTemplateNotice(`Saved template "${template.name}".`);
+  };
 
   const partyErrors = useMemo(
     () =>
@@ -316,6 +352,8 @@ export default function CreateShipmentPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        <TemplatePicker templates={templates} needsConfirmation={formHasInput} onApply={applyTemplate} />
+
         {/* Shipment ID */}
         <div className="card p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">
@@ -457,14 +495,32 @@ export default function CreateShipmentPage() {
             ))}
           </div>
 
-          <button
-            type="button"
-            onClick={addMilestone}
-            className="btn-ghost text-xs"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add milestone
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={addMilestone}
+              className="btn-ghost text-xs"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add milestone
+            </button>
+            <button
+              type="button"
+              onClick={() => setSaveTemplateOpen(true)}
+              disabled={!canSaveTemplate}
+              title={canSaveTemplate ? undefined : 'Name every milestone and make the split total 100% to save it as a template.'}
+              className="btn-ghost text-xs disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <BookmarkPlus className="w-3.5 h-3.5" />
+              Save as template
+            </button>
+          </div>
+          {templateNotice && (
+            <p className="mt-3 flex items-center gap-1.5 text-xs text-green-700" role="status">
+              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+              {templateNotice}
+            </p>
+          )}
         </div>
 
         {/* Submit */}
@@ -494,6 +550,13 @@ export default function CreateShipmentPage() {
           in the contract until milestones are confirmed.
         </p>
       </form>
+
+      <SaveTemplateDialog
+        open={saveTemplateOpen}
+        hasParties={hasParties}
+        onClose={() => setSaveTemplateOpen(false)}
+        onSave={handleSaveTemplate}
+      />
 
       {confirmationOpen && (
         <div
