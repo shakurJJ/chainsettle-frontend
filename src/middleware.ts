@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { LEGACY_TOKEN_COOKIE, TOKEN_KEY } from '@/lib/auth/storage-keys';
 
 const PUBLIC_PATHS = ['/auth/login'];
 
@@ -12,7 +13,10 @@ export function middleware(request: NextRequest) {
   }
 
   // Check for JWT token in cookie or Authorization header
-  const token = request.cookies.get('chainsetttle_token')?.value;
+  // The legacy cookie is still accepted until the client-side migration
+  // (migrateLegacyStorageKeys) has renamed it on the user's first visit.
+  const token =
+    request.cookies.get(TOKEN_KEY)?.value ?? request.cookies.get(LEGACY_TOKEN_COOKIE)?.value;
 
   if (!token && !pathname.startsWith('/auth')) {
     const loginUrl = new URL('/auth/login', request.url);
