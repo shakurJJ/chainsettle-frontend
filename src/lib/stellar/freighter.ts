@@ -110,6 +110,8 @@ export async function signNonce(nonce: string, networkPassphrase: string): Promi
   })
     .addOperation(
       Operation.manageData({
+        // Intentionally still misspelled: the backend verifies the signed
+        // ManageData op by this exact name. Rename together with the backend.
         name: 'chainsetttle_nonce',
         value: Buffer.from(nonce),
       }),
