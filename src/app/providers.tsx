@@ -3,8 +3,16 @@
 import { useEffect } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { migrateLegacyStorageKeys } from '@/lib/auth/storage-keys';
 import { SessionTimeoutModal } from '@/components/auth/SessionTimeoutModal';
 import messages from '@/i18n/messages/en.json';
+
+// Rename legacy `chainsetttle_*` storage keys before anything reads them.
+// Runs at module load (not in an effect) because child effects — e.g. the
+// templates store and the create-shipment draft loader — fire before ours.
+if (typeof window !== 'undefined') {
+  migrateLegacyStorageKeys();
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const rehydrate = useAuthStore((s) => s.rehydrate);
