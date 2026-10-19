@@ -11,6 +11,7 @@ import { useAccountExistence } from '@/lib/hooks/use-account-existence';
 import { normalizeAddress, validateParties, PARTY_ROLE_LABELS, type PartyRole } from '@/lib/stellar/address';
 import { generateShipmentId, usdcToStroops } from '@/lib/utils';
 import { useShipmentTemplates, useTemplatesStore } from '@/lib/hooks/use-templates-store';
+import { shipmentDraftKey } from '@/lib/auth/storage-keys';
 import { cloneMilestones, isSavableSplit, type ShipmentTemplate } from '@/lib/templates';
 import { TemplatePicker } from '@/components/templates/TemplatePicker';
 import { SaveTemplateDialog } from '@/components/templates/SaveTemplateDialog';
@@ -137,7 +138,7 @@ export default function CreateShipmentPage() {
     if (!address) return;
 
     draftLoaded.current = false;
-    const key = `chainsetttle_shipment_draft_${address}`;
+    const key = shipmentDraftKey(address);
     const savedDraft = localStorage.getItem(key);
     if (savedDraft) {
       try {
@@ -169,7 +170,7 @@ export default function CreateShipmentPage() {
         totalUsdc,
         milestones,
       };
-      localStorage.setItem(`chainsetttle_shipment_draft_${address}`, JSON.stringify(draft));
+      localStorage.setItem(shipmentDraftKey(address), JSON.stringify(draft));
     }, 300);
 
     return () => window.clearTimeout(timeout);
@@ -278,7 +279,7 @@ export default function CreateShipmentPage() {
         txHash,
       });
 
-      localStorage.removeItem(`chainsetttle_shipment_draft_${address}`);
+      localStorage.removeItem(shipmentDraftKey(address));
       router.push(`/dashboard/shipments/${shipmentId}`);
     } catch (err: any) {
       setError(err?.message ?? "Transaction failed. Please try again.");
