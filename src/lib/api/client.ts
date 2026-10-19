@@ -7,7 +7,7 @@
  */
 
 import axios from 'axios';
-import { endSession } from '@/lib/auth/session';
+import { endSession, TOKEN_KEY } from '@/lib/auth/session';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 
@@ -20,7 +20,7 @@ export const apiClient = axios.create({
 // Attach JWT on every request
 apiClient.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('chainsetttle_token');
+    const token = localStorage.getItem(TOKEN_KEY);
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
