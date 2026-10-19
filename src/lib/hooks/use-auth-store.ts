@@ -10,13 +10,19 @@
 import { create } from 'zustand';
 import type { User } from '@/types';
 import { getTokenExpiry, isExpired } from '@/lib/auth/jwt';
+import {
+  ADDRESS_KEY,
+  TOKEN_KEY,
+  displayNameKey,
+  notificationPreferencesKey,
+} from '@/lib/auth/storage-keys';
 
 const DEFAULT_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
 function clearStoredSession() {
-  localStorage.removeItem('chainsetttle_token');
-  localStorage.removeItem('chainsetttle_address');
-  document.cookie = 'chainsetttle_token=; path=/; max-age=0';
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(ADDRESS_KEY);
+  document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
 }
 
 export interface NotificationPreferences {
@@ -64,19 +70,19 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: (address, token, user) => {
     const expiresAt = getTokenExpiry(token);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('chainsetttle_token', token);
-      localStorage.setItem('chainsetttle_address', address);
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(ADDRESS_KEY, address);
       // Keep the middleware cookie alive exactly as long as the token itself
       const maxAge = expiresAt !== null
         ? Math.max(0, Math.floor((expiresAt - Date.now()) / 1000))
         : DEFAULT_COOKIE_MAX_AGE;
-      document.cookie = `chainsetttle_token=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
+      document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=${maxAge}; SameSite=Lax`;
     }
     const displayName = typeof window !== 'undefined'
-      ? localStorage.getItem(`chainsetttle_display_name_${address}`)
+      ? localStorage.getItem(displayNameKey(address))
       : null;
     const storedPreferences = typeof window !== 'undefined'
-      ? localStorage.getItem(`chainsetttle_notification_preferences_${address}`)
+      ? localStorage.getItem(notificationPreferencesKey(address))
       : null;
     set({
       address,
@@ -99,8 +105,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     const value = displayName.trim() || null;
     const address = useAuthStore.getState().address;
     if (typeof window !== 'undefined' && address) {
-      if (value) localStorage.setItem(`chainsetttle_display_name_${address}`, value);
-      else localStorage.removeItem(`chainsetttle_display_name_${address}`);
+      if (value) localStorage.setItem(displayNameKey(address), value);
+      else localStorage.removeItem(displayNameKey(address));
     }
     set({ displayName: value });
   },
@@ -109,7 +115,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const address = useAuthStore.getState().address;
     if (typeof window !== 'undefined' && address) {
       localStorage.setItem(
-        `chainsetttle_notification_preferences_${address}`,
+        notificationPreferencesKey(address),
         JSON.stringify(preferences),
       );
     }
@@ -133,8 +139,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   rehydrate: () => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('chainsetttle_token');
-      const address = localStorage.getItem('chainsetttle_address');
+      const token = localStorage.getItem(TOKEN_KEY);
+      const address = localStorage.getItem(ADDRESS_KEY);
       if (token && address) {
         const expiresAt = getTokenExpiry(token);
         // A stale token from a previous visit — drop it instead of
@@ -143,12 +149,12 @@ export const useAuthStore = create<AuthState>((set) => ({
           clearStoredSession();
           return;
         }
-        const storedPreferences = localStorage.getItem(`chainsetttle_notification_preferences_${address}`);
+        const storedPreferences = localStorage.getItem(notificationPreferencesKey(address));
         set({
           token,
           expiresAt,
           address,
-          displayName: localStorage.getItem(`chainsetttle_display_name_${address}`),
+          displayName: localStorage.getItem(displayNameKey(address)),
           notificationPreferences: storedPreferences
             ? { ...defaultNotificationPreferences, ...JSON.parse(storedPreferences) }
             : defaultNotificationPreferences,

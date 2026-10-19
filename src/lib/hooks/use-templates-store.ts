@@ -10,6 +10,7 @@ import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { CreateMilestoneInput } from '@/types';
+import { TEMPLATES_STORE_KEY } from '@/lib/auth/storage-keys';
 import {
   BUILT_IN_TEMPLATES,
   TEMPLATE_NAME_MAX_LENGTH,
@@ -104,7 +105,7 @@ export const useTemplatesStore = create<TemplatesState>()(
       },
     }),
     {
-      name: 'chainsetttle_shipment_templates',
+      name: TEMPLATES_STORE_KEY,
       version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({ templatesByOwner: state.templatesByOwner }),
