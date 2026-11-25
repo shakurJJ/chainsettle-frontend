@@ -5,6 +5,9 @@ import { Clock } from 'lucide-react';
 import { StellarLink } from '@/components/StellarLink';
 import { ContractError, TxPendingError } from '@/lib/stellar/errors';
 
+const TROUBLESHOOTING_URL =
+  'https://github.com/shakurJJ/chainsettle-frontend/blob/main/docs/troubleshooting.md';
+
 /**
  * Renders an error from a contract call:
  *   - TxPendingError → "still pending" notice with a Stellar Expert link
@@ -55,6 +58,16 @@ export function TransactionError({
                 <StellarLink value={error.txHash} type="tx" />
               </p>
             )}
+            <p className="mt-1">
+              <a
+                href={`${TROUBLESHOOTING_URL}#contract-error-codes`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-600 underline hover:text-brand-700"
+              >
+                {t('troubleshootingGuide')}
+              </a>
+            </p>
           </details>
         )}
       </div>

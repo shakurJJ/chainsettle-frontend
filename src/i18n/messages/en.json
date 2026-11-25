@@ -262,6 +262,7 @@
   "contractErrors": {
     "technicalDetails": "Technical details",
     "transaction": "Transaction:",
+    "troubleshootingGuide": "Troubleshooting guide",
     "pendingTitle": "Transaction still pending",
     "pendingDescription": "It was submitted but not confirmed yet, so it may still succeed. Check its status on Stellar Expert before trying again:",
     "codes": {

@@ -41,11 +41,18 @@ function toHex(buffer: ArrayBuffer): string {
 /**
  * Compute the SHA-256 hex digest of a file entirely in the browser.
  * The file is read in chunks so progress can be reported for large files.
+ * @throws {RangeError} when the file is larger than `MAX_PROOF_FILE_BYTES`
  */
 export async function hashFile(
   file: File,
   onProgress?: (phase: HashPhase, percent: number) => void,
 ): Promise<FileHashResult> {
+  if (file.size > MAX_PROOF_FILE_BYTES) {
+    throw new RangeError(
+      `${file.name} is ${formatBytes(file.size)}, which is over the ${formatBytes(MAX_PROOF_FILE_BYTES)} limit`,
+    );
+  }
+
   const bytes = new Uint8Array(file.size);
   let offset = 0;
 

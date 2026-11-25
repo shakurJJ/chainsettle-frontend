@@ -49,25 +49,41 @@ export async function copyToClipboard(text: string): Promise<void> {
 
 /**
  * Convert stroops (i128 as string) to human-readable USDC.
- * USDC on Stellar has 7 decimal places.
+ * USDC on Stellar has 7 decimal places. Rounds half up to `decimals` places
+ * using bigint arithmetic, so large balances never lose precision.
  * @example stroopsToUsdc("10000000") → "1.00"
  */
 export function stroopsToUsdc(stroops: string | bigint, decimals = 2): string {
   const value = BigInt(stroops);
-  const whole = value / 10_000_000n;
-  const fraction = (value % 10_000_000n).toString().padStart(7, '0');
-  const display = `${whole}.${fraction}`;
-  return parseFloat(display).toFixed(decimals);
+  const negative = value < 0n;
+  const abs = negative ? -value : value;
+  const places = Math.min(Math.max(Math.trunc(decimals), 0), 7);
+
+  const scale = 10n ** BigInt(7 - places);
+  const rounded = (abs + scale / 2n) / scale;
+  const unit = 10n ** BigInt(places);
+  const whole = rounded / unit;
+  const fraction = (rounded % unit).toString().padStart(places, '0');
+  const extraZeros = '0'.repeat(Math.max(Math.trunc(decimals) - 7, 0));
+
+  const display = places ? `${whole}.${fraction}${extraZeros}` : whole.toString();
+  return negative && rounded !== 0n ? `-${display}` : display;
 }
 
 /**
  * Convert human-readable USDC to stroops (bigint).
+ * Digits beyond the 7th decimal place are truncated.
+ * @throws {Error} when the input is not a non-negative decimal number
  * @example usdcToStroops("1.5") → 15000000n
  */
 export function usdcToStroops(usdc: string): bigint {
-  const [whole, fraction = ''] = usdc.split('.');
+  const trimmed = usdc.trim();
+  if (!/^(\d+\.?\d*|\.\d+)$/.test(trimmed)) {
+    throw new Error(`Invalid USDC amount: "${usdc}"`);
+  }
+  const [whole, fraction = ''] = trimmed.split('.');
   const paddedFraction = fraction.padEnd(7, '0').slice(0, 7);
-  return BigInt(whole) * 10_000_000n + BigInt(paddedFraction);
+  return BigInt(whole || '0') * 10_000_000n + BigInt(paddedFraction);
 }
 
 /**
