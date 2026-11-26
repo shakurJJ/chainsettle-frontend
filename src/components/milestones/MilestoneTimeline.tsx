@@ -13,13 +13,8 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import {
-  submitProof,
-  confirmMilestone,
-  raiseDispute,
-} from '@/lib/stellar/contract';
+import dynamic from 'next/dynamic';
 import { ArbiterPanel } from './ArbiterPanel';
-import { ProofDocumentDropzone } from './ProofDocumentDropzone';
 import { TransactionError, isTxPending } from '@/components/TransactionError';
 import { normalizeProofHash } from '@/lib/proof-hash';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
@@ -27,14 +22,36 @@ import { milestoneStatusBadge, milestoneStatusLabel, stroopsToUsdc, proofHashHre
 import type { OptimisticMilestonePatch, PendingMilestoneSync } from '@/lib/milestones/optimistic';
 import type { Shipment, Milestone, MilestoneStatus } from '@/types';
 
+// Heavy dropzone (pulls in file-hashing logic) — only needed when user opens
+// the proof submission panel or the verify panel.
+const ProofDocumentDropzone = dynamic(
+  () => import('./ProofDocumentDropzone').then((m) => m.ProofDocumentDropzone),
+  { ssr: false },
+);
+
 interface Props {
   shipment: Shipment;
   userRole: string;
   onUpdate: () => void;
   selectedMilestoneIndex?: number;
+  pendingSyncs?: Record<number, PendingMilestoneSync>;
+  onOptimisticCommit?: (
+    milestone: Milestone,
+    patch: OptimisticMilestonePatch,
+    expectedStatuses: MilestoneStatus[],
+  ) => void | Promise<void>;
+  onRollback?: (previousMilestone: Milestone) => void;
 }
 
-export function MilestoneTimeline({ shipment, userRole, onUpdate, selectedMilestoneIndex }: Props) {
+export function MilestoneTimeline({
+  shipment,
+  userRole,
+  onUpdate,
+  selectedMilestoneIndex,
+  pendingSyncs,
+  onOptimisticCommit,
+  onRollback,
+}: Props) {
   const t = useTranslations('milestones');
   const [error, setError] = useState<unknown>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -56,7 +73,6 @@ export function MilestoneTimeline({ shipment, userRole, onUpdate, selectedMilest
           onOptimisticCommit={onOptimisticCommit}
           onRollback={onRollback}
           isLast={i === shipment.milestones.length - 1}
-          onError={(msg) => setError(msg)}
           isSelected={selectedMilestoneIndex !== undefined ? i === selectedMilestoneIndex : false}
           onError={(err) => setError(err)}
         />
@@ -97,7 +113,6 @@ function MilestoneRow({
   onOptimisticCommit,
   onRollback,
   isLast,
-  onClearError,
   onError,
   isSelected = false,
 }: {
@@ -113,9 +128,8 @@ function MilestoneRow({
   ) => void | Promise<void>;
   onRollback?: (previousMilestone: Milestone) => void;
   isLast: boolean;
-  onError: (msg: string) => void;
-  isSelected?: boolean;
   onError: (err: unknown) => void;
+  isSelected?: boolean;
 }) {
   const t = useTranslations('milestones');
   const { address } = useAuthStore();
@@ -151,7 +165,6 @@ function MilestoneRow({
   ) => {
     if (!address || loading || isSyncing) return;
     const previousMilestone = milestone;
-    onClearError();
     setLoading(true);
     try {
       await txFn();
@@ -175,6 +188,8 @@ function MilestoneRow({
     return runMilestoneTx(
       async () => {
         if (!trimmedProof) throw new Error(t('proofRequired'));
+        // Dynamically import so stellar-sdk is not in the initial bundle
+        const { submitProof } = await import('@/lib/stellar/contract');
         await submitProof({
           callerAddress: address!,
           shipmentId: shipment.id,
@@ -216,12 +231,14 @@ function MilestoneRow({
     }
 
     return runMilestoneTx(
-      () =>
-        confirmMilestone({
+      async () => {
+        const { confirmMilestone } = await import('@/lib/stellar/contract');
+        await confirmMilestone({
           callerAddress: address!,
           shipmentId: shipment.id,
           milestoneIndex: milestone.milestoneIndex,
-        }),
+        });
+      },
       () => ({
         patch: {
           status: 'Confirmed',
@@ -235,12 +252,14 @@ function MilestoneRow({
 
   const handleDispute = () =>
     runMilestoneTx(
-      () =>
-        raiseDispute({
+      async () => {
+        const { raiseDispute } = await import('@/lib/stellar/contract');
+        await raiseDispute({
           callerAddress: address!,
           shipmentId: shipment.id,
           milestoneIndex: milestone.milestoneIndex,
-        }),
+        });
+      },
       () => ({
         patch: {
           status: 'Disputed',

@@ -40,8 +40,19 @@
   "events": {
     "title": "Chain Events",
     "eventCount": "{count, plural, =1 {# event found} other {# events found}}",
+    "filtersLabel": "Filter chain events",
+    "filterEventName": "Event name",
+    "allEvents": "All events",
+    "selectedEventsCount": "{count, plural, =1 {1 event selected} other {# events selected}}",
+    "filterShipment": "Shipment ID",
     "filterPlaceholder": "Filter by shipment ID...",
-    "clearFilter": "Clear filter",
+    "fromLedger": "From ledger",
+    "toLedger": "To ledger",
+    "ledgerPlaceholder": "e.g. 125000",
+    "invalidLedgerFormat": "Ledger numbers must be non-negative whole numbers.",
+    "invalidLedgerRange": "From ledger must be less than or equal to To ledger.",
+    "applyFilters": "Apply filters",
+    "clearFilter": "Clear filters",
     "columns": {
       "event": "Event",
       "shipment": "Shipment",
@@ -53,7 +64,7 @@
       "title": "No chain events yet",
       "description": "On-chain contract events will appear here once they are indexed.",
       "noResultsTitle": "No events found",
-      "noResultsDescription": "No events match the current shipment filter."
+      "noResultsDescription": "No events match the current filters."
     },
     "loadError": "Failed to load events"
   },
@@ -259,6 +270,7 @@
       "step3Title": "Resolve and Settle Escrow",
       "step3Desc": "Execute definitive on-chain dispute resolutions to release funds to the supplier or refund the buyer."
     }
+  },
   "contractErrors": {
     "technicalDetails": "Technical details",
     "transaction": "Transaction:",
@@ -320,5 +332,136 @@
     "logOut": "Log out",
     "renewFailed": "Could not renew your session. Please try again.",
     "wrongAccount": "Freighter is connected to a different account. Switch back to {address} to stay signed in, or log out."
+  },
+  "theme": {
+    "title": "Appearance theme",
+    "menuLabel": "Select theme",
+    "toggleLabel": "Theme: {mode}. Click to change",
+    "light": "Light",
+    "dark": "Dark",
+    "highContrast": "High contrast"
+  },
+  "help": {
+    "openButton": "Open help and FAQ",
+    "closeButton": "Close help drawer",
+    "title": "Help & FAQ",
+    "contextHeading": "Relevant to this page",
+    "coreHeading": "Escrow, fees & disputes",
+    "shortcutsHeading": "Keyboard shortcuts",
+    "fullDocsLink": "Read full documentation",
+    "shortcuts": {
+      "palette": "Open command palette",
+      "search": "Focus shipment search",
+      "newShipment": "Create a new shipment",
+      "toggleHelp": "Toggle help drawer",
+      "close": "Close dialog or drawer"
+    },
+    "core": {
+      "escrow": {
+        "q": "How does Stellar Soroban escrow protect funds?",
+        "a": "When a buyer creates a shipment, USDC is locked in the Soroban smart contract. Neither party can withdraw funds arbitrarily—payouts release only as milestones are confirmed or resolved by the arbiter."
+      },
+      "fees": {
+        "q": "What fees apply to shipments and transactions?",
+        "a": "ChainSettle charges no platform fee on escrow amounts. Every on-chain action (create shipment, submit proof, confirm, dispute, cancel) requires a small Stellar network fee paid in XLM by the signing wallet."
+      },
+      "disputes": {
+        "q": "How are milestone disputes handled?",
+        "a": "If a buyer disputes a submitted proof, the milestone enters Disputed status and funds remain locked. The designated arbiter reviews the proof and either approves release to the supplier or refunds the buyer."
+      }
+    },
+    "routes": {
+      "overview": {
+        "label": "Overview",
+        "items": [
+          {
+            "q": "What appears in Needs your attention?",
+            "a": "Milestones requiring an action from your connected wallet role—such as pending proof submission for suppliers, submitted proofs awaiting buyer confirmation, or open disputes for arbiters."
+          },
+          {
+            "q": "Why do balances show both USDC and XLM?",
+            "a": "USDC is used for shipment escrow settlements, while XLM covers Stellar Soroban transaction fees and account reserves."
+          }
+        ]
+      },
+      "shipments": {
+        "label": "Shipments",
+        "items": [
+          {
+            "q": "How can I narrow down or export shipments?",
+            "a": "Use status tabs, search by shipment ID or Stellar address, filter by counterparty role or date range, or select multiple rows to export CSV or archive completed shipments."
+          },
+          {
+            "q": "When can a shipment be cancelled?",
+            "a": "Only the buyer can cancel an Active shipment, and only before any milestone is confirmed, resolved, or currently awaiting review or dispute."
+          }
+        ]
+      },
+      "createShipment": {
+        "label": "Create shipment",
+        "items": [
+          {
+            "q": "Why must milestone percentages sum to 100%?",
+            "a": "The Soroban contract allocates the locked USDC across milestones by percentage. Splitting cleanly to 100% guarantees the full escrow is accounted for."
+          },
+          {
+            "q": "Are all four party addresses required to be unique?",
+            "a": "Yes. Buyer, supplier, logistics, and arbiter must be valid, distinct Stellar public keys starting with G so roles and permissions stay separated."
+          }
+        ]
+      },
+      "shipmentDetail": {
+        "label": "Shipment details",
+        "items": [
+          {
+            "q": "What is the difference between on-chain balance and expected balance?",
+            "a": "The on-chain balance reads directly from the Soroban contract, while the backend record updates from indexed chain events. Click Sync now if the event indexer is behind."
+          },
+          {
+            "q": "How are proof documents verified?",
+            "a": "Uploaded files are hashed locally with SHA-256 in your browser and never leave your device. Anyone with the original file can verify it against the submitted proof hash."
+          }
+        ]
+      },
+      "events": {
+        "label": "Chain events",
+        "items": [
+          {
+            "q": "How do event filters work?",
+            "a": "Combine event name multi-select, shipment ID, and ledger range filters. Active filters are saved in the URL so you can share or bookmark a filtered view."
+          },
+          {
+            "q": "What is a Stellar ledger number?",
+            "a": "A ledger is Stellar's sequential block number, closing roughly every 5 seconds. Use From ledger and To ledger to inspect events within a specific block window."
+          }
+        ]
+      },
+      "counterparties": {
+        "label": "Counterparties",
+        "items": [
+          {
+            "q": "How are supplier reliability metrics calculated?",
+            "a": "Metrics are derived from historical shipments involving that Stellar address, including completion rate, dispute frequency, and milestone turnaround."
+          },
+          {
+            "q": "Where are address book labels stored?",
+            "a": "Custom counterparty nicknames are stored locally in your browser per connected wallet address."
+          }
+        ]
+      },
+      "settings": {
+        "label": "Settings",
+        "items": [
+          {
+            "q": "Are display preferences and themes saved?",
+            "a": "Yes. Your theme (including High contrast), currency display, timezone, and date format persist across sessions in your browser."
+          },
+          {
+            "q": "How do I switch wallets or renew my session?",
+            "a": "Disconnect from Settings or the TopBar wallet menu, switch accounts in Freighter, and sign in again with your new Stellar address."
+          }
+        ]
+      }
+    }
   }
 }

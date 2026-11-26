@@ -202,11 +202,11 @@ export function deriveUserRole(
  */
 export function roleBadge(role: string): { className: string; label: string } {
   const config: Record<string, { className: string; label: string }> = {
-    buyer:     { className: 'bg-blue-50 text-blue-700 ring-blue-600/20',     label: 'Buyer' },
-    supplier:  { className: 'bg-green-50 text-green-700 ring-green-600/20',  label: 'Supplier' },
-    logistics: { className: 'bg-orange-50 text-orange-700 ring-orange-600/20', label: 'Logistics' },
-    arbiter:   { className: 'bg-purple-50 text-purple-700 ring-purple-600/20', label: 'Arbiter' },
-    observer:  { className: 'bg-gray-50 text-gray-500 ring-gray-500/20',     label: 'Read-only' },
+    buyer:     { className: 'bg-blue-50 text-blue-800 ring-blue-700/25',       label: 'Buyer' },
+    supplier:  { className: 'bg-green-50 text-green-800 ring-green-700/25',    label: 'Supplier' },
+    logistics: { className: 'bg-orange-50 text-orange-900 ring-orange-700/25', label: 'Logistics' },
+    arbiter:   { className: 'bg-purple-50 text-purple-800 ring-purple-700/25', label: 'Arbiter' },
+    observer:  { className: 'bg-gray-100 text-gray-800 ring-gray-600/25',      label: 'Read-only' },
   };
   return config[role] ?? config.observer;
 }

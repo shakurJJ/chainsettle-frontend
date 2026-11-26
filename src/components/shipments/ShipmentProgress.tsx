@@ -19,7 +19,7 @@ export function ShipmentProgress({ shipment }: { shipment: Shipment }) {
 
       <div className="w-full bg-gray-100 rounded-full h-2 mb-1.5">
         <div
-          className="bg-brand-600 h-2 rounded-full transition-all duration-700"
+          className="bg-brand-600 h-2 rounded-full transition-all duration-700 motion-reduce:transition-none"
           style={{ width: `${progress}%` }}
         />
       </div>

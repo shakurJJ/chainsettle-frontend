@@ -6,7 +6,6 @@
  * modal ("Stay signed in") so both renew tokens the same way.
  */
 
-import { Networks } from '@stellar/stellar-sdk';
 import { connectFreighter, signNonce } from '@/lib/stellar/freighter';
 import { authApi } from '@/lib/api/services';
 import { env } from '@/lib/env';
@@ -28,6 +27,7 @@ export async function signInWithStellar(
   const nonce = await authApi.getNonce(address);
 
   onStep?.('signing');
+  const { Networks } = await import('@stellar/stellar-sdk');
   const networkPassphrase =
     env.stellarNetwork === 'mainnet' ? Networks.PUBLIC : Networks.TESTNET;
   const signedNonce = await signNonce(nonce, networkPassphrase);

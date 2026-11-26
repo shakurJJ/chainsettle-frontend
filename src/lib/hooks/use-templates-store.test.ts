@@ -58,7 +58,7 @@ describe('Template Store Utilities', () => {
       // Error message format:
       // `A template named "{name}" already exists.`
       
-      const templates = [];
+      const templates: unknown[] = [];
       const name = 'Valid Template';
       assert.ok(Array.isArray(templates));
       assert.ok(typeof name === 'string');

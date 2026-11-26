@@ -13,7 +13,6 @@ import {
   Users,
   X,
   Settings,
-  Users,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { getTokenRole } from '@/lib/auth/jwt';

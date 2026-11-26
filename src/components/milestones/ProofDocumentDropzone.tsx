@@ -136,7 +136,7 @@ export function ProofDocumentDropzone({ onHashed, ariaLabel, disabled = false }:
               aria-valuemax={100}
             >
               <div
-                className="h-1.5 rounded-full bg-brand-600 transition-all"
+                className="h-1.5 rounded-full bg-brand-600 transition-all motion-reduce:transition-none"
                 style={{ width: `${progress.percent}%` }}
               />
             </div>

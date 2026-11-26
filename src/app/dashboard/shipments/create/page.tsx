@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useId, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Suspense, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Plus, Trash2, Loader2, AlertCircle, AlertTriangle, BookmarkPlus, CheckCircle2, Copy, X } from 'lucide-react';
 import Link from 'next/link';
-import { createShipment } from '@/lib/stellar/contract';
+import { env } from '@/lib/env';
 import { shipmentsApi } from '@/lib/api/services';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { useAccountExistence } from '@/lib/hooks/use-account-existence';
@@ -21,9 +18,6 @@ import { SupplierMetricsCard } from '@/components/counterparties/SupplierMetrics
 import { TransactionError, isTxPending } from '@/components/TransactionError';
 import type { CreateMilestoneInput } from '@/types';
 
-const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS!;
-const HIGH_VALUE_THRESHOLD_USDC =
-  Number(process.env.NEXT_PUBLIC_HIGH_VALUE_THRESHOLD_USDC) || 1000;
 const USDC_ADDRESS = env.usdcAddress;
 const HIGH_VALUE_THRESHOLD_USDC = 10_000;
 const DEFAULT_MILESTONES: CreateMilestoneInput[] = [
@@ -137,7 +131,6 @@ function CreateShipmentPageContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [txStep, setTxStep] = useState('');
-  const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [touched, setTouched] = useState<Record<EditableParty, boolean>>({
     supplier: false,
     logistics: false,
@@ -335,6 +328,8 @@ function CreateShipmentPageContent() {
     setLoading(true);
     try {
       setTxStep('Building transaction…');
+      // Dynamically import so stellar-sdk is only loaded when signing
+      const { createShipment } = await import('@/lib/stellar/contract');
       const txHash = await createShipment({
         callerAddress: address!,
         shipmentId,

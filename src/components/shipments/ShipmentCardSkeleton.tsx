@@ -1,6 +1,6 @@
 export function ShipmentCardSkeleton() {
   return (
-    <div className="card p-5 animate-pulse">
+    <div className="card p-5 animate-pulse motion-reduce:animate-none">
       {/* Top row: id+badge left, amounts right */}
       <div className="flex items-start justify-between mb-3">
         <div>

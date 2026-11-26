@@ -29,6 +29,7 @@ import {
 } from '@stellar/stellar-sdk';
 import { signTx } from './freighter';
 import { ContractError, TxPendingError, parseContractError } from './errors';
+import { env } from '@/lib/env';
 
 export { ContractError, TxPendingError } from './errors';
 

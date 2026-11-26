@@ -2,12 +2,19 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import dynamic from 'next/dynamic';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { TopBar } from '@/components/layout/TopBar';
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { KeyboardShortcuts } from '@/components/layout/KeyboardShortcuts';
 import { TourGuide } from '@/components/tour/TourGuide';
-import { CommandPalette } from '@/components/CommandPalette';
+import { HelpDrawer } from '@/components/help/HelpDrawer';
+
+// CommandPalette is keyboard-triggered (Cmd+K) — no need to block first paint
+const CommandPalette = dynamic(
+  () => import('@/components/CommandPalette').then((m) => m.CommandPalette),
+  { ssr: false },
+);
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -32,6 +39,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <KeyboardShortcuts />
+      <HelpDrawer />
       <TourGuide />
       <CommandPalette />
 
