@@ -200,8 +200,8 @@ describe('Session timeout utilities', () => {
       // - Removes '=' padding (must handle both padded and unpadded)
       // - Is case-sensitive
       
-      const base64 = 'SGVsbG8gV29ybGQ='; // "Hello World" in base64
-      const base64url = 'SGVsbG8gV29ybGQ'; // Same without padding
+      const base64: string = 'SGVsbG8gV29ybGQ='; // "Hello World" in base64
+      const base64url: string = 'SGVsbG8gV29ybGQ'; // Same without padding
       assert.ok(base64 !== base64url);
     });
   });

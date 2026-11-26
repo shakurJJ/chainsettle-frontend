@@ -9,8 +9,16 @@
 
 import { create } from 'zustand';
 import type { User, SupportedCurrency } from '@/types';
-import type { User } from '@/types';
 import { decodeJwtPayload, getTokenExpiry, getTokenRole, isExpired } from '@/lib/auth/jwt';
+import {
+  defaultDatePreferences,
+  readStoredDatePreferences,
+  writeStoredDatePreferences,
+  type DateDisplayMode,
+  type DatePreferences,
+} from '@/lib/utils/date-preferences';
+
+export type { DateDisplayMode, DatePreferences };
 
 const DEFAULT_COOKIE_MAX_AGE = 7 * 24 * 60 * 60;
 
@@ -100,7 +108,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       notificationPreferences: storedPreferences
         ? { ...defaultNotificationPreferences, ...JSON.parse(storedPreferences) }
         : defaultNotificationPreferences,
-      datePreferences,
+      datePreferences: readStoredDatePreferences(address),
       isConnected: true,
     });
   },
@@ -180,6 +188,15 @@ export const useAuthStore = create<AuthState>((set) => ({
         const storedPreferences = localStorage.getItem(`chainsetttle_notification_preferences_${address}`);
         const storedCurrency = (localStorage.getItem(`chainsetttle_display_currency_${address}`) ||
           localStorage.getItem('chainsetttle_display_currency')) as SupportedCurrency | null;
+        const rawUser = localStorage.getItem('chainsetttle_user');
+        let restoredUser: User | null = null;
+        if (rawUser) {
+          try {
+            restoredUser = JSON.parse(rawUser) as User;
+          } catch {
+            restoredUser = null;
+          }
+        }
         set({
           token,
           expiresAt,

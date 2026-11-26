@@ -132,12 +132,29 @@ export const milestonesApi = {
 export const eventsApi = {
   list: async (params?: {
     shipmentId?: string;
+    eventName?: string[];
+    fromLedger?: number;
+    toLedger?: number;
     page?: number;
     limit?: number;
   }): Promise<PaginatedResponse<ChainEvent>> => {
+    const queryParams: Record<string, string | number | undefined> = {
+      shipmentId: params?.shipmentId,
+      page: params?.page,
+      limit: params?.limit,
+    };
+    if (params?.eventName && params.eventName.length > 0) {
+      queryParams.eventName = params.eventName.join(',');
+    }
+    if (params?.fromLedger !== undefined) {
+      queryParams.fromLedger = params.fromLedger;
+    }
+    if (params?.toLedger !== undefined) {
+      queryParams.toLedger = params.toLedger;
+    }
     const { data } = await apiClient.get<ApiResponse<PaginatedResponse<ChainEvent>>>(
       '/events',
-      { params },
+      { params: queryParams },
     );
     return data.data;
   },

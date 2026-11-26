@@ -303,7 +303,8 @@ export function CommandPalette() {
               ) : (
                 allCommands.reduce(
                   (acc, cmd, idx) => {
-                    const sectionExists = acc.length > 0 && acc[acc.length - 1].section === cmd.section;
+                    const prevCmd = idx > 0 ? allCommands[idx - 1] : null;
+                    const sectionExists = prevCmd?.section === cmd.section;
 
                     if (!sectionExists && acc.length > 0) {
                       acc.push(

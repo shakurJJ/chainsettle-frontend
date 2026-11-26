@@ -1,9 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Copy, LogOut, UserRound, Globe, PlayCircle } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { Bell, Copy, LogOut, UserRound } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Bell, Clock, Contrast, Copy, LogOut, Moon, Sun, UserRound, Globe, PlayCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
@@ -11,10 +9,14 @@ import {
   type DateDisplayMode,
   type NotificationPreferences,
 } from '@/lib/hooks/use-auth-store';
+import { useThemeStore, type ThemeMode } from '@/lib/hooks/use-theme-store';
 import { useWalletBalance } from '@/lib/hooks/use-wallet-balance';
 import { useCurrency } from '@/lib/hooks/use-currency';
 import { ApproximateFiat } from '@/components/ui/ApproximateFiat';
+import { FormattedDate } from '@/components/FormattedDate';
 import { resetTour } from '@/components/tour/TourGuide';
+import { locales, localeLabels, LOCALE_COOKIE, type Locale } from '@/i18n/config';
+import { getBrowserTimeZone, getSupportedTimeZones } from '@/lib/utils/date-preferences';
 import type { SupportedCurrency } from '@/types';
 import { TemplateManager } from '@/components/templates/TemplateManager';
 import { AddressBookManager } from '@/components/AddressBookManager';
@@ -23,8 +25,10 @@ type PermissionState = 'default' | 'granted' | 'denied' | 'unsupported';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  const tTheme = useTranslations('theme');
   const locale = useLocale();
   const router = useRouter();
+  const { theme, setTheme } = useThemeStore();
   const {
     address,
     user,
@@ -43,6 +47,14 @@ export default function SettingsPage() {
   const [permission, setPermission] = useState<PermissionState>('default');
   const { balances, loading, error } = useWalletBalance(address);
   const { currencies } = useCurrency();
+  const timezones = useMemo(() => getSupportedTimeZones(), []);
+  const browserTimeZone = useMemo(() => getBrowserTimeZone(), []);
+  const previewIso = useMemo(() => new Date().toISOString(), []);
+
+  const handleLocaleChange = (nextLocale: Locale) => {
+    document.cookie = `${LOCALE_COOKIE}=${nextLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    router.refresh();
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
@@ -73,6 +85,9 @@ export default function SettingsPage() {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('chainsettle:replay-tour'));
       }
+    }
+  };
+
   const desktopNotificationsEnabled =
     permission === 'granted' && notificationPreferences.desktopNotifications;
 
@@ -87,7 +102,7 @@ export default function SettingsPage() {
       return;
     }
 
-    let nextPermission = permission;
+    let nextPermission: PermissionState = permission;
     if (permission !== 'granted') {
       nextPermission = (await Notification.requestPermission()) as PermissionState;
       setPermission(nextPermission);
@@ -285,6 +300,36 @@ export default function SettingsPage() {
                 <span className="text-gray-500">{t('datePreviewLabel')}</span>
                 <FormattedDate date={previewIso} className="font-medium text-gray-800 underline decoration-dotted" />
               </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="label">{tTheme('title')}</p>
+            <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label={tTheme('title')}>
+              {([
+                { value: 'light', label: tTheme('light'), Icon: Sun },
+                { value: 'dark', label: tTheme('dark'), Icon: Moon },
+                { value: 'high-contrast', label: tTheme('highContrast'), Icon: Contrast },
+              ] as Array<{ value: ThemeMode; label: string; Icon: typeof Sun }>).map(({ value, label, Icon }) => {
+                const selected = theme === value;
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setTheme(value)}
+                    className={`flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
+                      selected
+                        ? 'border-brand-600 bg-brand-50 text-brand-700'
+                        : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 

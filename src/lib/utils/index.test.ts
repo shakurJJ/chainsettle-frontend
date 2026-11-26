@@ -19,7 +19,9 @@ describe('Utility functions', () => {
     });
 
     it('removes false/null/undefined classes', () => {
-      const result = cn('class1', false && 'class2', null, 'class3', undefined && 'class4');
+      const flag = false as boolean;
+      const missing: string | undefined = undefined;
+      const result = cn('class1', flag && 'class2', null, 'class3', missing && 'class4');
       assert.ok(result.includes('class1'));
       assert.ok(!result.includes('class2'));
       assert.ok(result.includes('class3'));

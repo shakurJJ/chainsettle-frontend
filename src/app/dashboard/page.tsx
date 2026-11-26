@@ -35,7 +35,6 @@ function isActive(shipment: Shipment): boolean {
 
 function milestoneNeedsAction(
   milestone: Milestone,
-  role: UserRole | string | null,
   role: string | null,
 ): boolean {
   if (!role) return false;

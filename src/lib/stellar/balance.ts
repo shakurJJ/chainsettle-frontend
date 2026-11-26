@@ -1,4 +1,3 @@
-import { Horizon } from '@stellar/stellar-sdk';
 import { env } from '@/lib/env';
 
 export const HORIZON_URL = env.horizonUrl;
@@ -10,6 +9,7 @@ export interface WalletBalances {
 }
 
 export async function getWalletBalances(address: string): Promise<WalletBalances> {
+  const { Horizon } = await import('@stellar/stellar-sdk');
   const account = await new Horizon.Server(HORIZON_URL).loadAccount(address);
   const xlmBalance = account.balances.find((balance) => balance.asset_type === 'native');
   const usdcBalance = account.balances.find(

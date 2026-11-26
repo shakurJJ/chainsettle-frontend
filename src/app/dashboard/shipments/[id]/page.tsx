@@ -5,17 +5,15 @@ import { useParams } from 'next/navigation';
 import { Archive, ArchiveRestore, ArrowLeft, RefreshCw, Loader2, Printer, XCircle, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { shipmentsApi } from '@/lib/api/services';
-import { cancelShipment } from '@/lib/stellar/contract';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { isArchivableStatus, useArchivedShipments } from '@/lib/hooks/use-archived-shipments-store';
 import { MilestoneTimeline } from '@/components/milestones/MilestoneTimeline';
 import { ShipmentMeta } from '@/components/shipments/ShipmentMeta';
 import { ShipmentProgress } from '@/components/shipments/ShipmentProgress';
 import { ShipmentNotes } from '@/components/shipments/ShipmentNotes';
-import { shipmentStatusBadge, timeAgo, deriveUserRole, roleBadge } from '@/lib/utils';
+import { shipmentStatusBadge, timeAgo, deriveUserRole, roleBadge, stroopsToUsdc } from '@/lib/utils';
 import { ShipmentComments } from '@/components/shipments/ShipmentComments';
 import { EscrowBalanceCard } from '@/components/shipments/EscrowBalanceCard';
-import { shipmentStatusBadge, deriveUserRole, roleBadge, stroopsToUsdc } from '@/lib/utils';
 import { FormattedDate } from '@/components/FormattedDate';
 import { usePolling } from '@/lib/hooks/use-polling';
 import {
@@ -192,7 +190,8 @@ export default function ShipmentDetailPage() {
     setCancelError(null);
     setCancelStep('signing');
     try {
-      // Sign and submit cancel_shipment via Freighter; resolves once confirmed on-chain
+      // Dynamically import so stellar-sdk is only loaded when signing
+      const { cancelShipment } = await import('@/lib/stellar/contract');
       await cancelShipment({ callerAddress: address, shipmentId: id });
     } catch (err) {
       console.error(err);
@@ -401,6 +400,8 @@ export default function ShipmentDetailPage() {
       {/* Private Notes Panel */}
       <div className="mt-5">
         <ShipmentNotes shipmentId={shipment.id} />
+      </div>
+
       {/* Discussion & Notes Thread */}
       <div className="mt-5">
         <ShipmentComments

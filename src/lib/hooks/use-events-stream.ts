@@ -6,6 +6,9 @@ import { eventsApi } from '@/lib/api/services';
 
 interface UseEventsStreamOptions {
   shipmentId?: string;
+  eventNames?: string[];
+  fromLedger?: number;
+  toLedger?: number;
   initialEvents: ChainEvent[];
   page: number;
   onNewEvent?: (event: ChainEvent) => void;
@@ -13,6 +16,9 @@ interface UseEventsStreamOptions {
 
 export function useEventsStream({
   shipmentId,
+  eventNames,
+  fromLedger,
+  toLedger,
   initialEvents,
   page,
   onNewEvent,
@@ -69,8 +75,17 @@ export function useEventsStream({
       const incoming = raw as Partial<ChainEvent>;
       if (!incoming.id) return;
 
-      // Filter by shipmentId if active filter
+      // Filter by active filters
       if (shipmentId && incoming.shipmentId && incoming.shipmentId !== shipmentId) {
+        return;
+      }
+      if (eventNames && eventNames.length > 0 && incoming.eventName && !eventNames.includes(incoming.eventName)) {
+        return;
+      }
+      if (fromLedger !== undefined && typeof incoming.ledger === 'number' && incoming.ledger < fromLedger) {
+        return;
+      }
+      if (toLedger !== undefined && typeof incoming.ledger === 'number' && incoming.ledger > toLedger) {
         return;
       }
 
@@ -106,7 +121,7 @@ export function useEventsStream({
         onNewEvent?.(event);
       }
     },
-    [shipmentId, page, highlightEvent, onNewEvent],
+    [shipmentId, eventNames, fromLedger, toLedger, page, highlightEvent, onNewEvent],
   );
 
   // Poll fallback
@@ -117,6 +132,9 @@ export function useEventsStream({
         page: 1,
         limit: 10,
         shipmentId: shipmentId || undefined,
+        eventName: eventNames && eventNames.length > 0 ? eventNames : undefined,
+        fromLedger,
+        toLedger,
       });
       const incomingList = res.data ?? [];
       const currentIds = new Set(eventsRef.current.map((e) => e.id));
@@ -134,7 +152,7 @@ export function useEventsStream({
     } catch {
       // Ignore polling errors
     }
-  }, [page, shipmentId, handleIncomingEvent]);
+  }, [page, shipmentId, eventNames, fromLedger, toLedger, handleIncomingEvent]);
 
   // Connect to SSE stream
   const connectSSE = useCallback(() => {
@@ -238,7 +256,10 @@ export function useEventsStream({
   }, [connectSSE, disconnect]);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
     setNewEventsCount(0);
   };
 

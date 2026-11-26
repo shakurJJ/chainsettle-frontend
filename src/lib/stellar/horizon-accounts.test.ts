@@ -244,7 +244,7 @@ describe('Horizon Account Operations', () => {
       // Native + USDC: 2 + 0.5 = 2.5 XLM
       // Native + 2 assets: 2 + 1 = 3 XLM
       
-      const minBalance = (count) => 2 + 0.5 * count;
+      const minBalance = (count: number) => 2 + 0.5 * count;
       
       assert.equal(minBalance(0), 2);
       assert.equal(minBalance(1), 2.5);

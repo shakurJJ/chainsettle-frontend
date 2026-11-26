@@ -3,10 +3,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Download, Plus, Package, Search, SlidersHorizontal, X, ArrowUp, ArrowDown, ArrowUpDown, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState, useMemo, Suspense } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Archive,
   ArchiveRestore,
@@ -22,7 +18,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { shipmentsApi } from '@/lib/api/services';
-import { cancelShipment } from '@/lib/stellar/contract';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { isArchivableStatus, useArchivedShipments } from '@/lib/hooks/use-archived-shipments-store';
 import { ShipmentCard } from '@/components/shipments/ShipmentCard';
@@ -35,16 +30,11 @@ import type { Shipment, ShipmentStatus } from '@/types';
 import { useTranslations } from 'next-intl';
 
 const PAGE_LIMIT = 10;
-type SortKey = "createdAt" | "status" | "amount";
-type SortDirection = "asc" | "desc";
+type SortKey = 'createdAt' | 'status' | 'amount';
+type SortDirection = 'asc' | 'desc';
 
-const sortLabels: Record<SortKey, string> = {
-  createdAt: "Created",
-  status: "Status",
-  amount: "Amount",
-};
-const validSortKeys: SortKey[] = ["createdAt", "status", "amount"];
-const validSortDirections: SortDirection[] = ["asc", "desc"];
+const validSortKeys: SortKey[] = ['createdAt', 'status', 'amount'];
+const validSortDirections: SortDirection[] = ['asc', 'desc'];
 
 type ShipmentFilterTab = ShipmentStatus | 'Archived' | '';
 
@@ -61,16 +51,14 @@ function ShipmentsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const requestedSort = searchParams?.get("sort");
-  const requestedDirection = searchParams?.get("direction");
+  const requestedSort = searchParams?.get('sort');
+  const requestedDirection = searchParams?.get('direction');
   const sortKey: SortKey = validSortKeys.includes(requestedSort as SortKey)
     ? (requestedSort as SortKey)
-    : "createdAt";
-  const sortDirection: SortDirection = validSortDirections.includes(
-    requestedDirection as SortDirection,
-  )
+    : 'createdAt';
+  const sortDirection: SortDirection = validSortDirections.includes(requestedDirection as SortDirection)
     ? (requestedDirection as SortDirection)
-    : "desc";
+    : 'desc';
 
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +71,6 @@ function ShipmentsPageContent() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [cancelling, setCancelling] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [bulkActionError, setBulkActionError] = useState<string | null>(null);
@@ -137,32 +124,14 @@ function ShipmentsPageContent() {
 
   useEffect(() => {
     if (!address) return;
-
     const loadCounts = async () => {
       try {
-        const [allRes, activeRes, completedRes, cancelledRes] =
-          await Promise.all([
-            shipmentsApi.list({ buyerAddress: address, page: 1, limit: 1 }),
-            shipmentsApi.list({
-              buyerAddress: address,
-              status: 'Active',
-              page: 1,
-              limit: 1,
-            }),
-            shipmentsApi.list({
-              buyerAddress: address,
-              status: 'Completed',
-              page: 1,
-              limit: 1,
-            }),
-            shipmentsApi.list({
-              buyerAddress: address,
-              status: 'Cancelled',
-              page: 1,
-              limit: 1,
-            }),
-          ]);
-
+        const [allRes, activeRes, completedRes, cancelledRes] = await Promise.all([
+          shipmentsApi.list({ buyerAddress: address, page: 1, limit: 1 }),
+          shipmentsApi.list({ buyerAddress: address, status: 'Active', page: 1, limit: 1 }),
+          shipmentsApi.list({ buyerAddress: address, status: 'Completed', page: 1, limit: 1 }),
+          shipmentsApi.list({ buyerAddress: address, status: 'Cancelled', page: 1, limit: 1 }),
+        ]);
         setStatusCounts({
           All: allRes.total ?? allRes.meta?.total ?? 0,
           Active: activeRes.total ?? activeRes.meta?.total ?? 0,
@@ -173,7 +142,6 @@ function ShipmentsPageContent() {
         console.error(err);
       }
     };
-
     loadCounts();
   }, [address]);
 
@@ -183,24 +151,19 @@ function ShipmentsPageContent() {
     } else {
       setPersonalNotes({});
     }
-
     const handleNotesUpdated = () => {
-      if (address) {
-        setPersonalNotes(getAllShipmentNotes(address));
-      }
+      if (address) setPersonalNotes(getAllShipmentNotes(address));
     };
-
     window.addEventListener('chainsettle:notes-updated', handleNotesUpdated);
     return () => window.removeEventListener('chainsettle:notes-updated', handleNotesUpdated);
   }, [address]);
 
   useEffect(() => {
-    const paramStatus = searchParams?.get("status") ?? "";
+    const paramStatus = searchParams?.get('status') ?? '';
     if (paramStatus && !validStatusValues.includes(paramStatus)) {
-      setStatusFilter("");
+      setStatusFilter('');
       return;
     }
-
     setStatusFilter(paramStatus as ShipmentFilterTab);
     setFromDate(searchParams?.get('from') ?? '');
     setToDate(searchParams?.get('to') ?? '');
@@ -214,7 +177,6 @@ function ShipmentsPageContent() {
     router.replace('/dashboard/shipments');
   }, [router, searchParams]);
 
-  // Reset to page 1 when search or filter changes
   useEffect(() => {
     setPage(1);
   }, [search, statusFilter, fromDate, toDate, dateField, counterpartyRole]);
@@ -228,10 +190,7 @@ function ShipmentsPageContent() {
 
   const clearAdvancedFilters = () => {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete('from');
-    params.delete('to');
-    params.delete('date');
-    params.delete('role');
+    ['from', 'to', 'date', 'role'].forEach((k) => params.delete(k));
     router.replace(`/dashboard/shipments${params.toString() ? `?${params.toString()}` : ''}`);
   };
 
@@ -264,17 +223,10 @@ function ShipmentsPageContent() {
       const text = String(value ?? '');
       return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
     };
-    const rows = filtered.map((shipment) => [
-      shipment.id,
-      shipment.status,
-      shipment.createdAt,
-      shipment.updatedAt,
-      shipment.buyerAddress,
-      shipment.supplierAddress,
-      shipment.logisticsAddress,
-      shipment.arbiterAddress,
-      shipment.totalAmount,
-      shipment.releasedAmount,
+    const rows = filtered.map((s) => [
+      s.id, s.status, s.createdAt, s.updatedAt,
+      s.buyerAddress, s.supplierAddress, s.logisticsAddress, s.arbiterAddress,
+      s.totalAmount, s.releasedAmount,
     ]);
     const csv = [columns, ...rows].map((row) => row.map(escapeCsv).join(',')).join('\n');
     const blob = new Blob([`${csv}\n`], { type: 'text/csv;charset=utf-8;' });
@@ -286,67 +238,42 @@ function ShipmentsPageContent() {
     URL.revokeObjectURL(url);
   };
 
-  const [bulkActionLoading, setBulkActionLoading] = useState(false);
-  const [bulkActionError, setBulkActionError] = useState<string | null>(null);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-
-  const requestedSort = searchParams?.get("sort");
-  const requestedDirection = searchParams?.get("direction");
-  const sortKey: SortKey = validSortKeys.includes(requestedSort as SortKey)
-    ? (requestedSort as SortKey)
-    : "createdAt";
-  const sortDirection: SortDirection = validSortDirections.includes(
-    requestedDirection as SortDirection,
-  )
-    ? (requestedDirection as SortDirection)
-    : "desc";
-
   const sortedShipments = useMemo(
     () =>
       [...filtered].sort((left, right) => {
         let comparison = 0;
-        if (sortKey === "createdAt") {
-          comparison =
-            new Date(left.createdAt).getTime() -
-            new Date(right.createdAt).getTime();
-        } else if (sortKey === "amount") {
-          const leftAmount = BigInt(left.totalAmount);
-          const rightAmount = BigInt(right.totalAmount);
-          comparison =
-            leftAmount < rightAmount ? -1 : leftAmount > rightAmount ? 1 : 0;
+        if (sortKey === 'createdAt') {
+          comparison = new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
+        } else if (sortKey === 'amount') {
+          const la = BigInt(left.totalAmount);
+          const ra = BigInt(right.totalAmount);
+          comparison = la < ra ? -1 : la > ra ? 1 : 0;
         } else {
           comparison = left.status.localeCompare(right.status);
         }
-        return sortDirection === "asc" ? comparison : -comparison;
+        return sortDirection === 'asc' ? comparison : -comparison;
       }),
     [filtered, sortKey, sortDirection],
   );
 
-  const selectedShipments = sortedShipments.filter((shipment) =>
-    selectedIds.includes(shipment.id),
-  );
+  const selectedShipments = sortedShipments.filter((s) => selectedIds.includes(s.id));
   const archivableShipments = selectedShipments.filter(
-    (shipment) => isArchivableStatus(shipment.status) && !archivedSet.has(shipment.id),
+    (s) => isArchivableStatus(s.status) && !archivedSet.has(s.id),
   );
-  const unarchivableShipments = selectedShipments.filter((shipment) =>
-    archivedSet.has(shipment.id),
-  );
+  const unarchivableShipments = selectedShipments.filter((s) => archivedSet.has(s.id));
   const cancellableShipments = selectedShipments.filter(
-    (shipment) =>
-      shipment.buyerAddress === address &&
-      shipment.status === "Active" &&
-      !shipment.milestones.some(
-        (milestone) =>
-          milestone.status === "Confirmed" || milestone.status === "Resolved",
-      ),
+    (s) =>
+      s.buyerAddress === address &&
+      s.status === 'Active' &&
+      !s.milestones.some((m) => m.status === 'Confirmed' || m.status === 'Resolved'),
   );
   const allVisibleSelected =
     sortedShipments.length > 0 &&
-    sortedShipments.every((shipment) => selectedIds.includes(shipment.id));
+    sortedShipments.every((s) => selectedIds.includes(s.id));
 
   useEffect(() => {
     setSelectedIds((current) =>
-      current.filter((id) => shipments.some((shipment) => shipment.id === id)),
+      current.filter((id) => shipments.some((s) => s.id === id)),
     );
   }, [shipments]);
 
@@ -361,74 +288,43 @@ function ShipmentsPageContent() {
   const toggleAllVisible = () => {
     setSelectedIds((current) =>
       allVisibleSelected
-        ? current.filter(
-            (id) => !sortedShipments.some((shipment) => shipment.id === id),
-          )
-        : Array.from(
-            new Set([
-              ...current,
-              ...sortedShipments.map((shipment) => shipment.id),
-            ]),
-          ),
+        ? current.filter((id) => !sortedShipments.some((s) => s.id === id))
+        : Array.from(new Set([...current, ...sortedShipments.map((s) => s.id)])),
     );
   };
 
   const exportSelected = () => {
-    const header = [
-      "Shipment ID",
-      "Supplier",
-      "Status",
-      "Amount (USDC)",
-      "Created",
-    ];
-    const rows = selectedShipments.map((shipment) => [
-      shipment.id,
-      shipment.supplierAddress,
-      shipment.status,
-      stroopsToUsdc(shipment.totalAmount),
-      shipment.createdAt,
+    const header = ['Shipment ID', 'Supplier', 'Status', 'Amount (USDC)', 'Created'];
+    const rows = selectedShipments.map((s) => [
+      s.id, s.supplierAddress, s.status, stroopsToUsdc(s.totalAmount), s.createdAt,
     ]);
     const csv = [header, ...rows]
-      .map((row) =>
-        row.map((value) => `"${value.replaceAll('"', '""')}"`).join(","),
-      )
-      .join("\n");
-    const url = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8" }),
-    );
-    const link = document.createElement("a");
+      .map((row) => row.map((v) => `"${v.replaceAll('"', '""')}"`).join(','))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
     link.href = url;
-    link.download = "chainsettle-shipments.csv";
+    link.download = 'chainsettle-shipments.csv';
     link.click();
     URL.revokeObjectURL(url);
   };
-
-  const toggleSelectAll = toggleAllVisible;
-  const cancelSelected = () => setCancelModalOpen(true);
 
   const performBulkCancel = async () => {
     if (!address) return;
     setBulkActionLoading(true);
     setBulkActionError(null);
     try {
-      const cancelledIds = new Set(
-        cancellableShipments.map((shipment) => shipment.id),
-      );
+      // Dynamically import so stellar-sdk is not in the initial bundle
+      const { cancelShipment } = await import('@/lib/stellar/contract');
+      const cancelledIds = new Set(cancellableShipments.map((s) => s.id));
       for (const shipment of cancellableShipments) {
-        await cancelShipment({
-          callerAddress: address,
-          shipmentId: shipment.id,
-        });
+        await cancelShipment({ callerAddress: address, shipmentId: shipment.id });
         await shipmentsApi.sync(shipment.id);
       }
-      setSelectedIds((current) =>
-        current.filter((id) => !cancelledIds.has(id)),
-      );
+      setSelectedIds((current) => current.filter((id) => !cancelledIds.has(id)));
       setCancelModalOpen(false);
     } catch (err: any) {
-      setBulkActionError(
-        err?.message ?? "Some shipments could not be cancelled.",
-      );
+      setBulkActionError(err?.message ?? 'Some shipments could not be cancelled.');
     } finally {
       setBulkActionLoading(false);
     }
@@ -436,24 +332,20 @@ function ShipmentsPageContent() {
 
   const updateSort = (nextKey: SortKey) => {
     const params = new URLSearchParams(searchParams as any);
-    const nextDirection =
-      sortKey === nextKey && sortDirection === "asc" ? "desc" : "asc";
-    params.set("sort", nextKey);
-    params.set("direction", nextDirection);
+    const nextDirection = sortKey === nextKey && sortDirection === 'asc' ? 'desc' : 'asc';
+    params.set('sort', nextKey);
+    params.set('direction', nextDirection);
     router.replace(`/dashboard/shipments?${params.toString()}`);
   };
 
   const sortIcon = (key: SortKey) => {
-    if (sortKey !== key)
-      return <ArrowUpDown className="w-3.5 h-3.5 text-gray-300" />;
-    return sortDirection === "asc" ? (
+    if (sortKey !== key) return <ArrowUpDown className="w-3.5 h-3.5 text-gray-300" />;
+    return sortDirection === 'asc' ? (
       <ArrowUp className="w-3.5 h-3.5 text-brand-600" />
     ) : (
       <ArrowDown className="w-3.5 h-3.5 text-brand-600" />
     );
   };
-
-  const canBulkCancel = Boolean(address);
 
   return (
     <div>
@@ -467,8 +359,8 @@ function ShipmentsPageContent() {
                 statusFilter === 'Archived'
                   ? sortedShipments.length
                   : statusFilter
-                    ? statusCounts[statusFilter]
-                    : Math.max(0, statusCounts.All - archivedIds.length) || sortedShipments.length,
+                  ? statusCounts[statusFilter as keyof typeof statusCounts]
+                  : Math.max(0, statusCounts.All - archivedIds.length) || sortedShipments.length,
             })}
           </p>
         </div>
@@ -480,16 +372,19 @@ function ShipmentsPageContent() {
 
       {/* Filters */}
       <div className="mb-5 space-y-4">
-        <div className="flex items-center gap-3 flex-wrap" role="tablist" aria-label="Filter shipments by status">
+        <div
+          className="flex items-center gap-3 flex-wrap"
+          role="tablist"
+          aria-label="Filter shipments by status"
+        >
           {statusTabs.map((tab) => {
             const isActive = tab.value === statusFilter;
             const count =
               tab.value === 'Archived'
                 ? archivedIds.length
                 : tab.value === ''
-                  ? Math.max(0, statusCounts.All - archivedIds.length)
-                  : statusCounts[tab.value as keyof typeof statusCounts] ?? 0;
-
+                ? Math.max(0, statusCounts.All - archivedIds.length)
+                : statusCounts[tab.value as keyof typeof statusCounts] ?? 0;
             return (
               <button
                 key={tab.label}
@@ -498,19 +393,16 @@ function ShipmentsPageContent() {
                 aria-selected={isActive}
                 onClick={() => {
                   const params = new URLSearchParams(searchParams as any);
-                  if (tab.value) {
-                    params.set("status", tab.value);
-                  } else {
-                    params.delete("status");
-                  }
+                  if (tab.value) params.set('status', tab.value);
+                  else params.delete('status');
                   router.replace(
                     `/dashboard/shipments${params.toString() ? `?${params.toString()}` : ''}`,
                   );
                 }}
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 ${
                   isActive
-                    ? "bg-slate-900 text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 {tab.label} ({count})
@@ -520,7 +412,10 @@ function ShipmentsPageContent() {
         </div>
 
         <div className="relative max-w-xs">
-          <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" aria-hidden="true" />
+          <Search
+            className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+            aria-hidden="true"
+          />
           <input
             ref={searchInputRef}
             type="text"
@@ -541,7 +436,9 @@ function ShipmentsPageContent() {
             Date field
             <select
               value={dateField}
-              onChange={(e) => updateFilterUrl('date', e.target.value === 'updated' ? 'updated' : 'created')}
+              onChange={(e) =>
+                updateFilterUrl('date', e.target.value === 'updated' ? 'updated' : 'created')
+              }
               className="input mt-1 text-xs"
             >
               <option value="created">Created date</option>
@@ -574,7 +471,9 @@ function ShipmentsPageContent() {
               className="input mt-1 text-xs"
             >
               {counterpartyRoles.map((role) => (
-                <option key={role.value} value={role.value}>{role.label}</option>
+                <option key={role.value} value={role.value}>
+                  {role.label}
+                </option>
               ))}
             </select>
           </label>
@@ -587,7 +486,7 @@ function ShipmentsPageContent() {
         </div>
       </div>
 
-      {/* Shipments list */}
+      {/* Bulk action bar */}
       {!loading && filtered.length > 0 && (
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3">
           <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-gray-700">
@@ -601,14 +500,8 @@ function ShipmentsPageContent() {
           </label>
           {selectedIds.length > 0 && (
             <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">
-                {selectedIds.length} selected
-              </span>
-              <button
-                type="button"
-                onClick={exportSelected}
-                className="btn-secondary text-xs"
-              >
+              <span className="text-xs text-gray-500">{selectedIds.length} selected</span>
+              <button type="button" onClick={exportSelected} className="btn-secondary text-xs">
                 <Download className="h-3.5 w-3.5" /> Export selected
               </button>
               {archivableShipments.length > 0 && (
@@ -654,6 +547,8 @@ function ShipmentsPageContent() {
           )}
         </div>
       )}
+
+      {/* List */}
       {loading ? (
         <div className="space-y-3" aria-busy="true" aria-label="Loading shipments">
           {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -681,10 +576,7 @@ function ShipmentsPageContent() {
           title={t('empty.title')}
           description={t('empty.description')}
           action={
-            <Link
-              href="/dashboard/shipments/create"
-              className="btn-primary inline-flex"
-            >
+            <Link href="/dashboard/shipments/create" className="btn-primary inline-flex">
               <Plus className="w-4 h-4" />
               {t('newShipment')}
             </Link>
@@ -706,10 +598,7 @@ function ShipmentsPageContent() {
                 View archived ({archivedIds.length})
               </button>
             ) : (
-              <Link
-                href="/dashboard/shipments/create"
-                className="btn-primary inline-flex"
-              >
+              <Link href="/dashboard/shipments/create" className="btn-primary inline-flex">
                 <Plus className="w-4 h-4" />
                 {t('newShipment')}
               </Link>
@@ -742,6 +631,7 @@ function ShipmentsPageContent() {
         </>
       )}
 
+      {/* Bulk cancel modal */}
       {cancelModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4"
@@ -753,18 +643,18 @@ function ShipmentsPageContent() {
             aria-modal="true"
             aria-labelledby="bulk-cancel-title"
           >
-            <h2
-              id="bulk-cancel-title"
-              className="mb-2 text-lg font-semibold text-gray-900"
-            >
+            <h2 id="bulk-cancel-title" className="mb-2 text-lg font-semibold text-gray-900">
               Cancel selected shipments?
             </h2>
             <p className="mb-5 text-sm leading-6 text-gray-500">
-              This will submit cancellation transactions for{" "}
-              {cancellableShipments.length} active shipment
-              {cancellableShipments.length === 1 ? "" : "s"}. This action cannot
-              be undone.
+              This will submit cancellation transactions for {cancellableShipments.length} active
+              shipment{cancellableShipments.length === 1 ? '' : 's'}. This action cannot be undone.
             </p>
+            {bulkActionError && (
+              <p className="mb-4 text-sm text-red-600" role="alert">
+                {bulkActionError}
+              </p>
+            )}
             <div className="flex justify-end gap-2">
               <button
                 type="button"
@@ -780,7 +670,7 @@ function ShipmentsPageContent() {
                 disabled={bulkActionLoading}
                 className="btn-danger text-sm"
               >
-                {bulkActionLoading ? "Cancelling..." : "Cancel shipments"}
+                {bulkActionLoading ? 'Cancelling…' : 'Cancel shipments'}
               </button>
             </div>
           </div>

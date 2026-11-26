@@ -18,6 +18,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('chainsettle_theme');if(t==='dark'||t==='high-contrast'||t==='light'){document.documentElement.setAttribute('data-theme',t);if(t==='dark')document.documentElement.classList.add('dark');if(t==='high-contrast')document.documentElement.classList.add('high-contrast');}}catch(e){}})();`,
+          }}
+        />
         <a href="#main" className="skip-link">Skip to main content</a>
         <Providers locale={locale} messages={messages}>{children}</Providers>
       </body>

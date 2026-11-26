@@ -1,22 +1,18 @@
-const createNextIntlPlugin = require('next-intl/plugin');
-
-const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
-
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  // Security headers and Content Security Policy
+const path = require('path');
 const {
   PHASE_DEVELOPMENT_SERVER,
   PHASE_PRODUCTION_BUILD,
 } = require('next/constants');
+const createNextIntlPlugin = require('next-intl/plugin');
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
 
 /**
  * Fail fast on missing or malformed NEXT_PUBLIC_* variables so `next build`
  * and `next dev` stop with a readable message instead of failing at runtime.
- * Mirrors the rules in src/lib/env.ts, which validates again at runtime.
  */
 function validateEnv() {
   const errors = [];
@@ -68,10 +64,24 @@ function validateEnv() {
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@stellar/freighter-api', '@stellar/stellar-sdk'],
-  // Allow Stellar RPC and backend API calls from the browser
+  transpilePackages: ['@stellar/freighter-api'],
+  webpack(config) {
+    config.resolve.alias['@stellar/stellar-sdk'] = path.join(
+      __dirname,
+      'node_modules/@stellar/stellar-sdk/lib/cjs/index.js',
+    );
+    return config;
+  },
+  webpack(config) {
+    config.module.rules.push({
+      test: /\.js$/,
+      include: /[\\/]node_modules[\\/]@stellar[\\/]stellar-sdk[\\/]/,
+      use: [require.resolve('./scripts/stellar-es2020-loader.js')],
+    });
+    return config;
+  },
   async headers() {
-    const headers = [
+    const securityHeaders = [
       { key: 'X-Frame-Options', value: 'DENY' },
       { key: 'X-Content-Type-Options', value: 'nosniff' },
       { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -79,42 +89,27 @@ const nextConfig = {
         key: 'Permissions-Policy',
         value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
       },
+      {
+        key: 'Content-Security-Policy',
+        value: [
+          "default-src 'self'",
+          "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: https:",
+          "font-src 'self' data:",
+          "connect-src 'self' https://open.er-api.com https://api.coingecko.com https://soroban-testnet.stellar.org https://horizon-testnet.stellar.org https://horizon.stellar.org http://localhost:* ws://localhost:*",
+        ].join('; '),
+      },
     ];
 
     if (process.env.NODE_ENV === 'production') {
-      headers.push({
+      securityHeaders.push({
         key: 'Strict-Transport-Security',
         value: 'max-age=31536000; includeSubDomains',
       });
     }
 
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://open.er-api.com https://api.coingecko.com https://soroban-testnet.stellar.org https://horizon-testnet.stellar.org https://horizon.stellar.org http://localhost:* ws://localhost:*",
-            ].join('; '),
-          },
-        ],
-      },
-    ];
-  },
-};
-
-module.exports = withNextIntl(nextConfig);
-        headers,
-      },
-    ];
+    return [{ source: '/(.*)', headers: securityHeaders }];
   },
 };
 
@@ -122,5 +117,5 @@ module.exports = (phase) => {
   if (phase === PHASE_PRODUCTION_BUILD || phase === PHASE_DEVELOPMENT_SERVER) {
     validateEnv();
   }
-  return withNextIntl(nextConfig);
+  return withBundleAnalyzer(withNextIntl(nextConfig));
 };

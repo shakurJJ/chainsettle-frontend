@@ -26,7 +26,7 @@ const PAGE_LIMIT = 20;
 
 const USER_ROLES: UserRole[] = ['BUYER', 'SUPPLIER', 'LOGISTICS', 'ARBITER', 'ADMIN'];
 
-const ROLE_BADGE_STYLES: Record<UserRole, string> = {
+const ROLE_BADGE_STYLES: Partial<Record<UserRole, string>> = {
   BUYER: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   SUPPLIER: 'bg-green-50 text-green-700 ring-green-600/20',
   LOGISTICS: 'bg-orange-50 text-orange-700 ring-orange-600/20',

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
-import { getEscrowBalance } from '@/lib/stellar/contract';
 import { shipmentsApi } from '@/lib/api/services';
 import type { Shipment } from '@/types';
 
@@ -32,14 +31,16 @@ export function EscrowBalanceCard({
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [syncing, setSyncing] = useState(false);
 
-  const expectedBalance = shipment.totalAmount - shipment.releasedAmount;
+  const expectedBalance =
+    Number(BigInt(shipment.totalAmount) - BigInt(shipment.releasedAmount)) / 1e7;
 
   const fetchBalance = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
+      const { getEscrowBalance } = await import('@/lib/stellar/contract');
       const balance = await getEscrowBalance(shipment.id);
-      setOnChainBalance(balance);
+      setOnChainBalance(Number(balance) / 1e7);
       setLastChecked(new Date());
     } catch (err) {
       console.error(err);

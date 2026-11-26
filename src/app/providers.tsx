@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { NextIntlClientProvider, type AbstractIntlMessages } from 'next-intl';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
+import { useThemeStore } from '@/lib/hooks/use-theme-store';
 import { SessionTimeoutModal } from '@/components/auth/SessionTimeoutModal';
 import { defaultLocale, getLocaleDirection } from '@/i18n/config';
 import defaultMessages from '@/i18n/messages/en.json';
@@ -16,14 +17,16 @@ interface ProvidersProps {
 export function Providers({
   children,
   locale = defaultLocale,
-  messages = defaultMessages,
+  messages = defaultMessages as unknown as AbstractIntlMessages,
 }: ProvidersProps) {
   const rehydrate = useAuthStore((s) => s.rehydrate);
+  const rehydrateTheme = useThemeStore((s) => s.rehydrateTheme);
 
-  // Rehydrate JWT from localStorage on app start
+  // Rehydrate JWT and persisted theme on app start
   useEffect(() => {
     rehydrate();
-  }, [rehydrate]);
+    rehydrateTheme();
+  }, [rehydrate, rehydrateTheme]);
 
   // Keep <html lang> and <html dir> synchronized with active locale
   useEffect(() => {

@@ -3,7 +3,7 @@
 import { useTranslations } from 'next-intl';
 import { Clock } from 'lucide-react';
 import { StellarLink } from '@/components/StellarLink';
-import { ContractError, TxPendingError } from '@/lib/stellar/errors';
+import { ContractError, TxPendingError } from '@/lib/stellar/error-classes';
 
 const TROUBLESHOOTING_URL =
   'https://github.com/shakurJJ/chainsettle-frontend/blob/main/docs/troubleshooting.md';

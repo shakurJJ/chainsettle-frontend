@@ -38,8 +38,19 @@
   "events": {
     "title": "Événements on-chain",
     "eventCount": "{count, plural, =1 {# événement trouvé} other {# événements trouvés}}",
+    "filtersLabel": "Filtrer les événements on-chain",
+    "filterEventName": "Nom de l'événement",
+    "allEvents": "Tous les événements",
+    "selectedEventsCount": "{count, plural, =1 {1 événement sélectionné} other {# événements sélectionnés}}",
+    "filterShipment": "ID d'expédition",
     "filterPlaceholder": "Filtrer par ID d'expédition...",
-    "clearFilter": "Effacer le filtre",
+    "fromLedger": "Ledger min",
+    "toLedger": "Ledger max",
+    "ledgerPlaceholder": "ex. 125000",
+    "invalidLedgerFormat": "Les numéros de ledger doivent être des entiers positifs.",
+    "invalidLedgerRange": "Le ledger de début doit être inférieur ou égal au ledger de fin.",
+    "applyFilters": "Appliquer",
+    "clearFilter": "Effacer les filtres",
     "columns": {
       "event": "Événement",
       "shipment": "Expédition",
@@ -51,8 +62,9 @@
       "title": "Aucun événement on-chain",
       "description": "Les événements du contrat apparaîtront ici une fois indexés.",
       "noResultsTitle": "Aucun événement trouvé",
-      "noResultsDescription": "Aucun événement ne correspond au filtre actuel."
-    }
+      "noResultsDescription": "Aucun événement ne correspond aux filtres actuels."
+    },
+    "loadError": "Échec du chargement des événements"
   },
   "settings": {
     "title": "Profil et paramètres",
@@ -250,6 +262,46 @@
     "description": "Désolé, nous n'avons pas trouvé cette page.",
     "backToDashboard": "Retour au tableau de bord"
   },
+  "tour": {
+    "skip": "Passer la visite",
+    "next": "Suivant",
+    "back": "Retour",
+    "finish": "Compris",
+    "stepCount": "Étape {current} sur {total}",
+    "replayTour": "Rejouer la visite",
+    "buyer": {
+      "step1Title": "Créer des expéditions en séquestre",
+      "step1Desc": "Configurez une nouvelle expédition avec fournisseur, logistique, arbitre et jalons.",
+      "step2Title": "Verrouiller les USDC",
+      "step2Desc": "Les fonds sont déposés dans le contrat Soroban jusqu'à confirmation des jalons.",
+      "step3Title": "Vérifier et confirmer",
+      "step3Desc": "Examinez les preuves et confirmez les jalons pour libérer les fonds."
+    },
+    "supplier": {
+      "step1Title": "Consulter les expéditions actives",
+      "step1Desc": "Suivez les expéditions où vous êtes désigné comme fournisseur.",
+      "step2Title": "Soumettre une preuve",
+      "step2Desc": "Téléversez des preuves chiffrées pour déclencher la confirmation.",
+      "step3Title": "Recevoir les paiements",
+      "step3Desc": "Les USDC sont versés directement à votre adresse Stellar."
+    },
+    "logistics": {
+      "step1Title": "Suivre les expéditions assignées",
+      "step1Desc": "Surveillez les cargaisons où vous êtes partenaire logistique.",
+      "step2Title": "Soumettre les étapes de transit",
+      "step2Desc": "Confirmez les remises physiques et soumettez les preuves on-chain.",
+      "step3Title": "Synchroniser les parties",
+      "step3Desc": "Vos jalons garantissent la transparence tout au long du transport."
+    },
+    "arbiter": {
+      "step1Title": "Accéder aux litiges",
+      "step1Desc": "Examinez les expéditions contestées nécessitant votre arbitrage.",
+      "step2Title": "Examiner les preuves",
+      "step2Desc": "Vérifiez les preuves soumises et l'historique des jalons.",
+      "step3Title": "Résoudre le litige",
+      "step3Desc": "Libérez les fonds au fournisseur ou remboursez l'acheteur."
+    }
+  },
   "session": {
     "expiringTitle": "Votre session va bientôt expirer",
     "expiringDescription": "Déconnexion dans <time>{countdown}</time>. Restez connecté pour conserver votre travail.",
@@ -258,5 +310,136 @@
     "logOut": "Se déconnecter",
     "renewFailed": "Impossible de renouveler la session.",
     "wrongAccount": "Freighter est connecté à un autre compte ({address})."
+  },
+  "theme": {
+    "title": "Thème d'apparence",
+    "menuLabel": "Choisir un thème",
+    "toggleLabel": "Thème : {mode}. Cliquer pour changer",
+    "light": "Clair",
+    "dark": "Sombre",
+    "highContrast": "Contraste élevé"
+  },
+  "help": {
+    "openButton": "Ouvrir l'aide et la FAQ",
+    "closeButton": "Fermer le panneau d'aide",
+    "title": "Aide & FAQ",
+    "contextHeading": "Pertinent pour cette page",
+    "coreHeading": "Séquestre, frais et litiges",
+    "shortcutsHeading": "Raccourcis clavier",
+    "fullDocsLink": "Lire la documentation complète",
+    "shortcuts": {
+      "palette": "Ouvrir la palette de commandes",
+      "search": "Rechercher une expédition",
+      "newShipment": "Créer une nouvelle expédition",
+      "toggleHelp": "Afficher/masquer l'aide",
+      "close": "Fermer la fenêtre ou le tiroir"
+    },
+    "core": {
+      "escrow": {
+        "q": "Comment le séquestre Soroban protège-t-il les fonds ?",
+        "a": "Lors de la création d'une expédition, les USDC sont verrouillés dans le contrat intelligent Soroban et ne sont libérés qu'à la confirmation des jalons ou après décision de l'arbitre."
+      },
+      "fees": {
+        "q": "Quels frais s'appliquent aux expéditions et transactions ?",
+        "a": "ChainSettle ne prélève aucun frais de plateforme sur les montants en séquestre. Chaque action on-chain nécessite uniquement de faibles frais réseau Stellar payés en XLM."
+      },
+      "disputes": {
+        "q": "Comment les litiges sur un jalon sont-ils gérés ?",
+        "a": "En cas de litige, les fonds restent bloqués jusqu'à ce que l'arbitre désigné examine les preuves et décide de libérer les fonds au fournisseur ou de rembourser l'acheteur."
+      }
+    },
+    "routes": {
+      "overview": {
+        "label": "Aperçu",
+        "items": [
+          {
+            "q": "Qu'affiche la section Nécessite votre attention ?",
+            "a": "Les jalons en attente d'une action de votre rôle connecté : soumission de preuve, confirmation acheteur ou résolution d'un litige."
+          },
+          {
+            "q": "Pourquoi afficher les soldes en USDC et XLM ?",
+            "a": "L'USDC sert au règlement du séquestre, tandis que le XLM couvre les frais de transaction sur Stellar Soroban."
+          }
+        ]
+      },
+      "shipments": {
+        "label": "Expéditions",
+        "items": [
+          {
+            "q": "Comment filtrer ou exporter les expéditions ?",
+            "a": "Utilisez les onglets de statut, la recherche par ID ou adresse, ou sélectionnez plusieurs expéditions pour exporter un CSV."
+          },
+          {
+            "q": "Quand une expédition peut-elle être annulée ?",
+            "a": "Seul l'acheteur peut annuler une expédition active avant qu'un jalon ne soit confirmé ou en litige."
+          }
+        ]
+      },
+      "createShipment": {
+        "label": "Créer une expédition",
+        "items": [
+          {
+            "q": "Pourquoi les pourcentages doivent-ils totaliser 100 % ?",
+            "a": "Le contrat Soroban répartit la totalité du séquestre USDC selon ces pourcentages."
+          },
+          {
+            "q": "Les quatre adresses doivent-elles être distinctes ?",
+            "a": "Oui, acheteur, fournisseur, logistique et arbitre doivent être des clés publiques Stellar valides et différentes."
+          }
+        ]
+      },
+      "shipmentDetail": {
+        "label": "Détails de l'expédition",
+        "items": [
+          {
+            "q": "Pourquoi comparer le solde on-chain et le solde attendu ?",
+            "a": "Le solde on-chain interroge directement Soroban ; cliquez sur Synchroniser si l'indexeur a du retard."
+          },
+          {
+            "q": "Comment les documents de preuve sont-ils vérifiés ?",
+            "a": "Le hash SHA-256 est calculé localement dans votre navigateur sans jamais téléverser le fichier."
+          }
+        ]
+      },
+      "events": {
+        "label": "Événements",
+        "items": [
+          {
+            "q": "Comment fonctionnent les filtres d'événements ?",
+            "a": "Combinez noms d'événements, ID d'expédition et plage de ledgers ; les filtres sont conservés dans l'URL."
+          },
+          {
+            "q": "Qu'est-ce qu'un numéro de ledger Stellar ?",
+            "a": "C'est le numéro séquentiel de bloc sur Stellar, clôturé environ toutes les 5 secondes."
+          }
+        ]
+      },
+      "counterparties": {
+        "label": "Contreparties",
+        "items": [
+          {
+            "q": "Comment sont calculées les métriques fournisseur ?",
+            "a": "Elles sont calculées à partir de l'historique des expéditions impliquant cette adresse Stellar."
+          },
+          {
+            "q": "Où sont enregistrés les libellés du carnet d'adresses ?",
+            "a": "Ils sont stockés localement dans votre navigateur pour votre portefeuille connecté."
+          }
+        ]
+      },
+      "settings": {
+        "label": "Paramètres",
+        "items": [
+          {
+            "q": "Les préférences de thème sont-elles enregistrées ?",
+            "a": "Oui, votre thème (y compris le contraste élevé) et vos formats de date restent enregistrés localement."
+          },
+          {
+            "q": "Comment changer de portefeuille ?",
+            "a": "Déconnectez votre portefeuille puis reconnectez-vous avec le nouveau compte dans Freighter."
+          }
+        ]
+      }
+    }
   }
 }

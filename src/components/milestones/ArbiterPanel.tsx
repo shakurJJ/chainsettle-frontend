@@ -2,10 +2,8 @@
 
 import { useState } from 'react';
 import { AlertTriangle, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
-import { resolveDispute } from '@/lib/stellar/contract';
 import { useAuthStore } from '@/lib/hooks/use-auth-store';
 import { stroopsToUsdc, proofHashHref } from '@/lib/utils';
-import { parseContractError } from '@/lib/stellar/errors';
 import type { OptimisticMilestonePatch } from '@/lib/milestones/optimistic';
 import type { Shipment, Milestone, MilestoneStatus } from '@/types';
 
@@ -14,7 +12,12 @@ interface ArbiterPanelProps {
   shipment: Shipment;
   disabled?: boolean;
   onUpdate: () => void;
-  onError?: (msg: string) => void;
+  onOptimisticCommit?: (
+    milestone: Milestone,
+    patch: OptimisticMilestonePatch,
+    expectedStatuses: MilestoneStatus[],
+  ) => void | Promise<void>;
+  onRollback?: (previousMilestone: Milestone) => void;
   onError?: (err: unknown) => void;
 }
 
@@ -40,21 +43,28 @@ export function ArbiterPanel({
 
     setLoading(action);
     try {
+      // Dynamically import so stellar-sdk is not in the initial bundle
+      const { resolveDispute } = await import('@/lib/stellar/contract');
       await resolveDispute({
         callerAddress: address!,
         shipmentId: shipment.id,
         milestoneIndex: milestone.milestoneIndex,
         approve,
       });
-      onUpdate();
-    } catch (err: any) {
-      const msg = err?.message ?? `Failed to ${action} milestone`;
-      if (onError) onError(msg);
-      else alert(msg);
+
+      if (onOptimisticCommit) {
+        const patch: OptimisticMilestonePatch = { status: 'Resolved' };
+        await onOptimisticCommit(previousMilestone, patch, ['Resolved']);
+      } else {
+        onUpdate();
+      }
     } catch (err) {
       onRollback?.(previousMilestone);
       if (onError) onError(err);
-      else alert(parseContractError(err).message);
+      else {
+        const { parseContractError } = await import('@/lib/stellar/errors');
+        alert(parseContractError(err).message);
+      }
     } finally {
       setLoading(null);
       setConfirmAction(null);

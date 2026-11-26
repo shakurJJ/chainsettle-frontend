@@ -25,6 +25,9 @@
   a:focus-visible,
   button:focus-visible,
   input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
   [role="button"]:focus-visible,
   [tabindex]:focus-visible {
     @apply outline-none ring-2 ring-brand-500 ring-offset-2;
@@ -61,7 +64,7 @@
   }
 
   .input {
-    @apply w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 transition-all;
+    @apply w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-500 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20 transition-all;
   }
 
   .label {
@@ -69,17 +72,245 @@
   }
 
   .badge {
-    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium;
+    @apply inline-flex items-center rounded-lg px-2.5 py-1 text-xs font-medium border;
   }
 
-  .badge-active    { @apply badge bg-blue-50 text-blue-700; }
-  .badge-completed { @apply badge bg-green-50 text-green-700; }
-  .badge-cancelled { @apply badge bg-gray-100 text-gray-600; }
-  .badge-pending   { @apply badge bg-gray-100 text-gray-600; }
-  .badge-submitted { @apply badge bg-amber-50 text-amber-700; }
-  .badge-confirmed { @apply badge bg-green-50 text-green-700; }
-  .badge-disputed  { @apply badge bg-red-50 text-red-700; }
-  .badge-resolved  { @apply badge bg-purple-50 text-purple-700; }
+  /* WCAG AA audited status badges (>= 4.5:1 text-to-background contrast) */
+  .badge-active    { @apply badge bg-blue-50 text-blue-800 border-blue-200; }
+  .badge-completed { @apply badge bg-green-50 text-green-800 border-green-200; }
+  .badge-cancelled { @apply badge bg-gray-100 text-gray-800 border-gray-300; }
+  .badge-pending   { @apply badge bg-gray-100 text-gray-800 border-gray-300; }
+  .badge-submitted { @apply badge bg-amber-50 text-amber-900 border-amber-200; }
+  .badge-confirmed { @apply badge bg-green-50 text-green-800 border-green-200; }
+  .badge-disputed  { @apply badge bg-red-50 text-red-800 border-red-200; }
+  .badge-resolved  { @apply badge bg-purple-50 text-purple-800 border-purple-200; }
+}
+
+/* Dark theme overrides */
+html[data-theme="dark"] body {
+  background-color: #030712;
+  color: #f9fafb;
+}
+
+html[data-theme="dark"] .bg-gray-50,
+html[data-theme="dark"] .bg-gray-100 {
+  background-color: #111827;
+}
+
+html[data-theme="dark"] .bg-white,
+html[data-theme="dark"] .card {
+  background-color: #111827;
+  border-color: #1f2937;
+  color: #f9fafb;
+}
+
+html[data-theme="dark"] .text-gray-900 {
+  color: #f9fafb;
+}
+
+html[data-theme="dark"] .text-gray-800,
+html[data-theme="dark"] .text-gray-700 {
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .text-gray-600,
+html[data-theme="dark"] .text-gray-500,
+html[data-theme="dark"] .text-gray-400 {
+  color: #9ca3af;
+}
+
+html[data-theme="dark"] .border-gray-100,
+html[data-theme="dark"] .border-gray-200,
+html[data-theme="dark"] .border-gray-300 {
+  border-color: #374151;
+}
+
+html[data-theme="dark"] .input {
+  background-color: #030712;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+html[data-theme="dark"] .btn-secondary {
+  background-color: #1f2937;
+  border-color: #374151;
+  color: #f9fafb;
+}
+
+html[data-theme="dark"] .btn-secondary:hover {
+  background-color: #374151;
+}
+
+html[data-theme="dark"] .btn-ghost {
+  color: #d1d5db;
+}
+
+html[data-theme="dark"] .btn-ghost:hover {
+  background-color: #1f2937;
+}
+
+/* High-contrast theme: every text/background pair meets >= 4.5:1 (7:1+ target) */
+html[data-theme="high-contrast"] body {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+html[data-theme="high-contrast"] .bg-white,
+html[data-theme="high-contrast"] .bg-gray-50,
+html[data-theme="high-contrast"] .bg-gray-100,
+html[data-theme="high-contrast"] .bg-gray-200,
+html[data-theme="high-contrast"] .card {
+  background-color: #ffffff;
+  color: #000000;
+  border-color: #000000;
+}
+
+html[data-theme="high-contrast"] .card {
+  border-width: 2px;
+  box-shadow: none;
+}
+
+html[data-theme="high-contrast"] .text-gray-900,
+html[data-theme="high-contrast"] .text-gray-800,
+html[data-theme="high-contrast"] .text-gray-700,
+html[data-theme="high-contrast"] .text-gray-600,
+html[data-theme="high-contrast"] .text-gray-500,
+html[data-theme="high-contrast"] .text-gray-400,
+html[data-theme="high-contrast"] .text-gray-300 {
+  color: #000000;
+}
+
+html[data-theme="high-contrast"] .text-brand-600,
+html[data-theme="high-contrast"] .text-brand-700,
+html[data-theme="high-contrast"] .text-blue-600,
+html[data-theme="high-contrast"] .text-blue-700 {
+  color: #000099;
+}
+
+html[data-theme="high-contrast"] .text-green-600,
+html[data-theme="high-contrast"] .text-green-700,
+html[data-theme="high-contrast"] .text-emerald-700 {
+  color: #004d00;
+}
+
+html[data-theme="high-contrast"] .text-red-500,
+html[data-theme="high-contrast"] .text-red-600,
+html[data-theme="high-contrast"] .text-red-700 {
+  color: #8b0000;
+}
+
+html[data-theme="high-contrast"] .text-amber-500,
+html[data-theme="high-contrast"] .text-amber-600,
+html[data-theme="high-contrast"] .text-amber-700 {
+  color: #663300;
+}
+
+html[data-theme="high-contrast"] .border-gray-50,
+html[data-theme="high-contrast"] .border-gray-100,
+html[data-theme="high-contrast"] .border-gray-200,
+html[data-theme="high-contrast"] .border-gray-300 {
+  border-color: #000000;
+}
+
+html[data-theme="high-contrast"] .bg-brand-600,
+html[data-theme="high-contrast"] .btn-primary {
+  background-color: #000099;
+  color: #ffffff;
+  border: 2px solid #000000;
+}
+
+html[data-theme="high-contrast"] .bg-brand-600:hover,
+html[data-theme="high-contrast"] .btn-primary:hover {
+  background-color: #000066;
+}
+
+html[data-theme="high-contrast"] .btn-secondary {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+}
+
+html[data-theme="high-contrast"] .btn-secondary:hover,
+html[data-theme="high-contrast"] .btn-ghost:hover {
+  background-color: #e5e7eb;
+}
+
+html[data-theme="high-contrast"] .btn-danger {
+  background-color: #8b0000;
+  color: #ffffff;
+  border: 2px solid #000000;
+}
+
+html[data-theme="high-contrast"] .btn-ghost {
+  color: #000000;
+  border: 1px solid #000000;
+}
+
+html[data-theme="high-contrast"] .input {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+}
+
+html[data-theme="high-contrast"] .input::placeholder {
+  color: #374151;
+  opacity: 1;
+}
+
+html[data-theme="high-contrast"] .badge,
+html[data-theme="high-contrast"] .badge-active,
+html[data-theme="high-contrast"] .badge-completed,
+html[data-theme="high-contrast"] .badge-cancelled,
+html[data-theme="high-contrast"] .badge-pending,
+html[data-theme="high-contrast"] .badge-submitted,
+html[data-theme="high-contrast"] .badge-confirmed,
+html[data-theme="high-contrast"] .badge-disputed,
+html[data-theme="high-contrast"] .badge-resolved {
+  background-color: #ffffff;
+  color: #000000;
+  border: 2px solid #000000;
+  font-weight: 600;
+}
+
+html[data-theme="high-contrast"] .bg-blue-50 { background-color: #e8efff; color: #000080; border-color: #000080; }
+html[data-theme="high-contrast"] .bg-green-50,
+html[data-theme="high-contrast"] .bg-emerald-50 { background-color: #e6f5ea; color: #004d00; border-color: #004d00; }
+html[data-theme="high-contrast"] .bg-amber-50 { background-color: #fff3d6; color: #5c2d00; border-color: #5c2d00; }
+html[data-theme="high-contrast"] .bg-red-50 { background-color: #fde8e8; color: #8b0000; border-color: #8b0000; }
+html[data-theme="high-contrast"] .bg-purple-50 { background-color: #f3e8ff; color: #4a0080; border-color: #4a0080; }
+
+html[data-theme="high-contrast"] a:focus-visible,
+html[data-theme="high-contrast"] button:focus-visible,
+html[data-theme="high-contrast"] input:focus-visible,
+html[data-theme="high-contrast"] select:focus-visible,
+html[data-theme="high-contrast"] textarea:focus-visible,
+html[data-theme="high-contrast"] summary:focus-visible,
+html[data-theme="high-contrast"] [role="button"]:focus-visible,
+html[data-theme="high-contrast"] [tabindex]:focus-visible {
+  outline: 3px solid #000099;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+/* Respect prefers-reduced-motion across skeletons, progress bars, and transitions */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping,
+  .animate-spin,
+  .animate-fade-in,
+  .animate-slide-up {
+    animation: none !important;
+  }
 }
 
 @media print {
